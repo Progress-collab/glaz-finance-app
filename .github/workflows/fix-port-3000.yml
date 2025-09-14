@@ -1,0 +1,83 @@
+name: Fix Port 3000
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-port-3000:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Fix Port 3000 Application
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== FIXING PORT 3000 ==="
+          
+          echo "1. Stopping all PM2 processes..."
+          pm2 stop all
+          pm2 delete all
+          
+          echo "2. Adding firewall rule for port 3000..."
+          netsh advfirewall firewall add rule name="Port 3000 App" dir=in action=allow protocol=TCP localport=3000
+          
+          echo "3. Creating simple server for port 3000..."
+          cd C:\glaz-finance-app
+          @"
+          const express = require('express');
+          const app = express();
+          const PORT = 3000;
+          
+          app.get('/', (req, res) => {
+            res.json({ 
+              message: 'Port 3000 Application Restored!',
+              timestamp: new Date().toISOString(),
+              port: PORT
+            });
+          });
+          
+          app.get('/health', (req, res) => {
+            res.json({ 
+              status: 'OK',
+              timestamp: new Date().toISOString(),
+              port: PORT
+            });
+          });
+          
+          app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Port 3000 server running on ${PORT}`);
+          });
+          "@ > port3000-server.js
+          
+          echo "4. Installing Express if not exists..."
+          npm install express --save
+          
+          echo "5. Starting port 3000 server with PM2..."
+          pm2 start port3000-server.js --name "port3000-app"
+          pm2 save
+          
+          echo "6. Checking PM2 status..."
+          pm2 list
+          
+          echo "7. Checking port status..."
+          netstat -an | findstr :3000
+          
+          echo "8. Checking if port is listening..."
+          netstat -an | findstr LISTENING | findstr :3000
+          
+          echo "9. Testing with PowerShell instead of curl..."
+          try {
+            $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 5
+            echo "Local test successful: $($response.StatusCode)"
+          } catch {
+            echo "Local test failed: $($_.Exception.Message)"
+          }
+          
+          echo "10. Checking PM2 logs..."
+          pm2 logs port3000-app --lines 10
+          
+          echo "=== PORT 3000 FIX COMPLETE ==="
