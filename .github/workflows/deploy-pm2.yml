@@ -21,35 +21,35 @@ jobs:
         password: ${{ secrets.SERVER_PASSWORD }}
         port: ${{ secrets.SERVER_PORT }}
         script: |
-          # Set environment variables
+          Write-Host "Setting environment variables..." -ForegroundColor Green
           $env:NODE_SKIP_PLATFORM_CHECK = "1"
           
-          # Navigate to application directory
+          Write-Host "Navigating to application directory..." -ForegroundColor Green
           cd C:\glaz-finance-app
           
-          # Stop existing PM2 processes
+          Write-Host "Stopping existing PM2 processes..." -ForegroundColor Yellow
           pm2 stop all
           
-          # Pull latest changes
+          Write-Host "Pulling latest changes..." -ForegroundColor Green
           git pull origin main
           
-          # Install dependencies
+          Write-Host "Installing dependencies..." -ForegroundColor Green
           npm install
           
-          # Install TypeScript globally
+          Write-Host "Installing TypeScript globally..." -ForegroundColor Green
           npm install -g typescript
           
-          # Install backend dependencies
+          Write-Host "Installing backend dependencies..." -ForegroundColor Green
           cd backend
           npm install
           cd ..
           
-          # Install frontend dependencies
+          Write-Host "Installing frontend dependencies..." -ForegroundColor Green
           cd frontend
           npm install --legacy-peer-deps
           cd ..
           
-          # Create backend JavaScript file if TypeScript build fails
+          Write-Host "Checking if backend JavaScript file exists..." -ForegroundColor Green
           if (!(Test-Path "backend\dist\index.js")) {
             Write-Host "Creating JavaScript backend file..." -ForegroundColor Yellow
             @"
@@ -88,7 +88,7 @@ jobs:
           "@ | Out-File -FilePath "backend\index.js" -Encoding UTF8
           }
           
-          # Create PM2 configuration for JavaScript
+          Write-Host "Creating PM2 configuration..." -ForegroundColor Green
           @"
           module.exports = {
             apps : [{
@@ -124,14 +124,14 @@ jobs:
           };
           "@ | Out-File -FilePath "ecosystem-js.config.js" -Encoding UTF8
           
-          # Start with PM2
+          Write-Host "Starting PM2 processes..." -ForegroundColor Green
           pm2 start ecosystem-js.config.js
           pm2 save
           
-          # Show status
+          Write-Host "Showing PM2 status..." -ForegroundColor Green
           pm2 list
           
-          # Show port status
+          Write-Host "Checking port status..." -ForegroundColor Green
           netstat -an | findstr :3001
           netstat -an | findstr :3002
           
