@@ -50,7 +50,7 @@ if (!(Test-Path $appDir)) {
 }
 
 # Set up directory permissions
-icacls $appDir /grant "$deployUser:(OI)(CI)F" /T
+icacls $appDir /grant "${deployUser}:(OI)(CI)F" /T
 
 # Install OpenSSH Server
 Write-Host "Installing OpenSSH Server..." -ForegroundColor Yellow

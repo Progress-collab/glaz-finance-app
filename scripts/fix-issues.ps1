@@ -80,7 +80,7 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
 Write-Host "Setting up directory permissions..." -ForegroundColor Yellow
 $appDir = "C:\glaz-finance-app"
 if (Test-Path $appDir) {
-    icacls $appDir /grant "$deployUser:(OI)(CI)F" /T
+    icacls $appDir /grant "${deployUser}:(OI)(CI)F" /T
     Write-Host "Directory permissions set" -ForegroundColor Green
 }
 
