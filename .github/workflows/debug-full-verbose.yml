@@ -1,0 +1,112 @@
+name: Debug Full Verbose
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Debug Full Verbose
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        debug: true
+        timeout: 300s
+        command_timeout: 300s
+        envs: NODE_SKIP_PLATFORM_CHECK
+        script_stop: true
+        script: |
+          echo "=== FULL VERBOSE DEBUG ==="
+          echo "Timestamp: $(date)"
+          echo "User: $(whoami)"
+          echo "Working directory: $(pwd)"
+          echo "Environment: NODE_SKIP_PLATFORM_CHECK=$NODE_SKIP_PLATFORM_CHECK"
+          echo ""
+          
+          cd C:\glaz-finance-app
+          echo "Changed to: $(pwd)"
+          echo ""
+          
+          echo "=== GIT INFORMATION ==="
+          echo "Git version:"
+          git --version
+          echo ""
+          echo "Git status (detailed):"
+          git status --porcelain
+          echo ""
+          echo "Git log (last 3 commits):"
+          git log --oneline -3
+          echo ""
+          echo "Git remote (detailed):"
+          git remote show origin
+          echo ""
+          echo "Current branch info:"
+          git branch -vv
+          echo ""
+          
+          echo "=== FILE SYSTEM CHECK ==="
+          echo "Directory contents:"
+          dir /s /b
+          echo ""
+          echo "Application files with details:"
+          for %f in (glaz-finance-app*.js) do (
+            echo File: %f
+            echo Size: %~zf bytes
+            echo Date: %~tf
+            echo.
+          )
+          echo ""
+          echo "Public directory check:"
+          if exist "public" (
+            echo "public directory exists"
+            dir public /s
+          ) else (
+            echo "public directory NOT FOUND"
+          )
+          echo ""
+          
+          echo "=== PROCESS CHECK ==="
+          echo "PM2 status:"
+          pm2 list
+          echo ""
+          echo "PM2 logs (last 20 lines):"
+          pm2 logs --lines 20 --nostream
+          echo ""
+          echo "Node.js processes:"
+          tasklist | findstr node
+          echo ""
+          echo "Port 3000 detailed:"
+          netstat -ano | findstr :3000
+          echo ""
+          
+          echo "=== NETWORK TEST ==="
+          echo "Testing localhost:3000..."
+          powershell -Command "$ErrorActionPreference='Continue'; try { $r = Invoke-WebRequest -Uri 'http://localhost:3000' -TimeoutSec 15 -UseBasicParsing; Write-Host 'SUCCESS: Status' $r.StatusCode; Write-Host 'Content-Type:' $r.Headers.'Content-Type'; Write-Host 'Server:' $r.Headers.Server; Write-Host 'Content-Length:' $r.Content.Length; Write-Host 'Response Headers:'; $r.Headers | Format-List; Write-Host 'Content Preview:'; $r.Content.Substring(0, [Math]::Min(500, $r.Content.Length)) } catch { Write-Host 'ERROR:' $_.Exception.Message; Write-Host 'Error Details:' $_.Exception }"
+          echo ""
+          
+          echo "=== SYSTEM INFORMATION ==="
+          echo "Windows version:"
+          ver
+          echo ""
+          echo "Node.js version:"
+          node --version
+          echo ""
+          echo "NPM version:"
+          npm --version
+          echo ""
+          echo "PM2 version:"
+          pm2 --version
+          echo ""
+          echo "Disk space:"
+          dir C:\
+          echo ""
+          
+          echo "=== COMPLETE DEBUG FINISHED ==="

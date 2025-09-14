@@ -1,0 +1,138 @@
+name: Deploy with Full Output
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy with Full Output
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        debug: true
+        envs: NODE_SKIP_PLATFORM_CHECK
+        script_stop: true
+        script: |
+          echo "=== DEPLOY WITH FULL OUTPUT ==="
+          echo "Environment: NODE_SKIP_PLATFORM_CHECK=$NODE_SKIP_PLATFORM_CHECK"
+          echo "Current user: $(whoami)"
+          echo "Current directory: $(pwd)"
+          echo "Date: $(date)"
+          echo ""
+          
+          echo "1. NAVIGATING TO APPLICATION DIRECTORY"
+          cd C:\glaz-finance-app
+          echo "Changed to: $(pwd)"
+          echo ""
+          
+          echo "2. CHECKING CURRENT STATUS"
+          echo "Files in directory:"
+          dir
+          echo ""
+          echo "Git status:"
+          git status
+          echo ""
+          echo "Git remote:"
+          git remote -v
+          echo ""
+          echo "Current branch:"
+          git branch
+          echo ""
+          
+          echo "3. STOPPING ALL PROCESSES"
+          echo "Stopping PM2 processes..."
+          pm2 stop all 2>&1
+          echo "Deleting PM2 processes..."
+          pm2 delete all 2>&1
+          echo "Killing Node.js processes..."
+          taskkill /F /IM node.exe 2>&1
+          echo "Waiting 3 seconds..."
+          timeout /t 3 /nobreak >nul
+          echo ""
+          
+          echo "4. FORCE GIT SYNC"
+          echo "Stashing changes..."
+          git stash 2>&1
+          echo "Fetching from remote..."
+          git fetch origin 2>&1
+          echo "Hard reset to origin/main..."
+          git reset --hard origin/main 2>&1
+          echo "Pulling latest changes..."
+          git pull origin main 2>&1
+          echo "Git sync complete!"
+          echo ""
+          
+          echo "5. CHECKING FILES AFTER SYNC"
+          echo "Application files:"
+          dir glaz-finance-app*.js
+          echo ""
+          echo "Public directory:"
+          if exist "public" (
+            echo "public directory exists"
+            dir public
+          ) else (
+            echo "public directory NOT FOUND!"
+          )
+          echo ""
+          
+          echo "6. SETTING UP PACKAGE.JSON"
+          if exist "package-simple.json" (
+            echo "Copying package-simple.json to package.json"
+            copy package-simple.json package.json
+          ) else (
+            echo "package-simple.json not found"
+          )
+          echo ""
+          
+          echo "7. INSTALLING DEPENDENCIES"
+          echo "Running npm install..."
+          npm install --legacy-peer-deps 2>&1
+          echo "Dependencies installed!"
+          echo ""
+          
+          echo "8. STARTING APPLICATION"
+          if exist "glaz-finance-app-v2.js" (
+            echo "Starting glaz-finance-app-v2.js with PM2..."
+            pm2 start glaz-finance-app-v2.js --name "glaz-finance-v2" 2>&1
+            pm2 save 2>&1
+            echo "Application started!"
+            echo ""
+            
+            echo "9. WAITING FOR STARTUP"
+            echo "Waiting 5 seconds for application to start..."
+            timeout /t 5 /nobreak >nul
+            echo ""
+            
+            echo "10. CHECKING PM2 STATUS"
+            pm2 list 2>&1
+            echo ""
+            
+            echo "11. CHECKING PORT STATUS"
+            echo "Port 3000 status:"
+            netstat -an | findstr :3000
+            echo ""
+            
+            echo "12. TESTING APPLICATION"
+            echo "Testing http://localhost:3000..."
+            powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:3000' -TimeoutSec 10; Write-Host 'SUCCESS: Status Code' $r.StatusCode; Write-Host 'Content-Type:' $r.Headers.'Content-Type'; Write-Host 'Content Length:' $r.Content.Length 'bytes'; if ($r.Headers.'Content-Type' -like '*text/html*') { Write-Host 'HTML content detected (v2.0)' } elseif ($r.Headers.'Content-Type' -like '*application/json*') { Write-Host 'JSON content detected (v1.0)' }; Write-Host 'Content preview:'; $r.Content.Substring(0, [Math]::Min(200, $r.Content.Length)) } catch { Write-Host 'ERROR:' $_.Exception.Message }" 2>&1
+            echo ""
+            
+          ) else (
+            echo "ERROR: glaz-finance-app-v2.js NOT FOUND!"
+            echo "Available files:"
+            dir *.js
+          )
+          
+          echo "=== DEPLOYMENT COMPLETE ==="
+          echo "Check http://195.133.47.134:3000 in your browser"
