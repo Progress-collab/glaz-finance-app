@@ -1,0 +1,58 @@
+name: Diagnose SSH Connection
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check GitHub Secrets
+      run: |
+        echo "Checking GitHub Secrets availability..."
+        if [ -n "${{ secrets.SERVER_HOST }}" ]; then
+          echo "✅ SERVER_HOST is set: ${{ secrets.SERVER_HOST }}"
+        else
+          echo "❌ SERVER_HOST is not set"
+        fi
+        
+        if [ -n "${{ secrets.SERVER_USERNAME }}" ]; then
+          echo "✅ SERVER_USERNAME is set: ${{ secrets.SERVER_USERNAME }}"
+        else
+          echo "❌ SERVER_USERNAME is not set"
+        fi
+        
+        if [ -n "${{ secrets.SERVER_PASSWORD }}" ]; then
+          echo "✅ SERVER_PASSWORD is set (length: ${#SERVER_PASSWORD})"
+        else
+          echo "❌ SERVER_PASSWORD is not set"
+        fi
+        
+        if [ -n "${{ secrets.SERVER_PORT }}" ]; then
+          echo "✅ SERVER_PORT is set: ${{ secrets.SERVER_PORT }}"
+        else
+          echo "❌ SERVER_PORT is not set"
+        fi
+
+    - name: Test Network Connectivity
+      run: |
+        echo "Testing network connectivity..."
+        ping -c 3 195.133.47.134 || echo "❌ Ping failed"
+        nc -zv 195.133.47.134 22 || echo "❌ Port 22 not accessible"
+
+    - name: Test SSH Connection (Verbose)
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 195.133.47.134
+        username: Administrator
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: 22
+        debug: true
+        script: |
+          echo "=== SSH Connection Test ==="
+          echo "Current time: $(Get-Date)"
+          echo "User: $env:USERNAME"
+          echo "Computer: $env:COMPUTERNAME"
+          echo "Working directory: $(Get-Location)"
+          echo "SSH test successful!"
