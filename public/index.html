@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glaz Finance App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+        }
+
+        .accounts-section {
+            margin-top: 30px;
+        }
+
+        .accounts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .account-card {
+            background: white;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .account-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .account-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .account-balance {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #51cf66;
+            margin-bottom: 10px;
+        }
+
+        .account-details {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .account-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .account-actions .btn {
+            flex: 1;
+            padding: 8px 15px;
+            font-size: 12px;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .total-balance {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .total-balance h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .total-balance .amount {
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Glaz Finance App</h1>
+            <p>Управление личными финансами</p>
+        </div>
+
+        <div class="content">
+            <!-- Total Balance -->
+            <div class="total-balance">
+                <h3>Общий баланс</h3>
+                <div class="amount" id="totalBalance">0 ₽</div>
+            </div>
+
+            <!-- Add Account Form -->
+            <div class="form-section">
+                <h2>➕ Добавить новый счет</h2>
+                <form id="addAccountForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="accountName">Название счета</label>
+                            <input type="text" id="accountName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="accountBalance">Баланс</label>
+                            <input type="number" id="accountBalance" name="balance" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="accountCurrency">Валюта</label>
+                            <select id="accountCurrency" name="currency" required>
+                                <option value="RUB">₽ Рубль</option>
+                                <option value="USD">$ Доллар</option>
+                                <option value="EUR">€ Евро</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="accountType">Тип счета</label>
+                            <select id="accountType" name="type" required>
+                                <option value="checking">Расчетный</option>
+                                <option value="savings">Сберегательный</option>
+                                <option value="investment">Инвестиционный</option>
+                                <option value="credit">Кредитный</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="accountDescription">Описание</label>
+                        <textarea id="accountDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">Добавить счет</button>
+                </form>
+            </div>
+
+            <!-- Message Area -->
+            <div id="messageArea"></div>
+
+            <!-- Accounts Section -->
+            <div class="accounts-section">
+                <h2>💳 Мои счета</h2>
+                <div id="loadingMessage" class="loading">Загрузка счетов...</div>
+                <div id="accountsContainer" class="accounts-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accounts = [];
+        let editingAccountId = null;
+
+        // Load accounts on page load
+        document.addEventListener('DOMContentLoaded', loadAccounts);
+
+        // Add account form submission
+        document.getElementById('addAccountForm').addEventListener('submit', addAccount);
+
+        async function loadAccounts() {
+            try {
+                const response = await fetch('/api/accounts');
+                const data = await response.json();
+                accounts = data.accounts;
+                renderAccounts();
+                updateTotalBalance();
+                hideLoading();
+            } catch (error) {
+                showMessage('Ошибка загрузки счетов: ' + error.message, 'error');
+                hideLoading();
+            }
+        }
+
+        async function addAccount(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const accountData = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/accounts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(accountData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    accounts.push(data.account);
+                    renderAccounts();
+                    updateTotalBalance();
+                    event.target.reset();
+                    showMessage('Счет успешно добавлен!', 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage('Ошибка: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        async function editAccount(id) {
+            const account = accounts.find(acc => acc.id === id);
+            if (!account) return;
+
+            // Fill form with account data
+            document.getElementById('accountName').value = account.name;
+            document.getElementById('accountBalance').value = account.balance;
+            document.getElementById('accountCurrency').value = account.currency;
+            document.getElementById('accountType').value = account.type;
+            document.getElementById('accountDescription').value = account.description || '';
+
+            editingAccountId = id;
+            
+            // Change form title and button
+            document.querySelector('.form-section h2').textContent = '✏️ Редактировать счет';
+            document.querySelector('.form-section button').textContent = 'Сохранить изменения';
+            document.querySelector('.form-section button').className = 'btn btn-success';
+
+            // Scroll to form
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function updateAccount(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const accountData = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch(`/api/accounts/${editingAccountId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(accountData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const index = accounts.findIndex(acc => acc.id === editingAccountId);
+                    accounts[index] = data.account;
+                    renderAccounts();
+                    updateTotalBalance();
+                    resetForm();
+                    showMessage('Счет успешно обновлен!', 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage('Ошибка: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteAccount(id) {
+            if (!confirm('Вы уверены, что хотите удалить этот счет?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/accounts/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    accounts = accounts.filter(acc => acc.id !== id);
+                    renderAccounts();
+                    updateTotalBalance();
+                    showMessage('Счет успешно удален!', 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage('Ошибка: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        function renderAccounts() {
+            const container = document.getElementById('accountsContainer');
+            
+            if (accounts.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; grid-column: 1 / -1;">У вас пока нет счетов. Добавьте первый счет!</p>';
+                return;
+            }
+
+            container.innerHTML = accounts.map(account => `
+                <div class="account-card">
+                    <div class="account-name">${account.name}</div>
+                    <div class="account-balance">${formatBalance(account.balance, account.currency)}</div>
+                    <div class="account-details">
+                        <div><strong>Тип:</strong> ${getTypeName(account.type)}</div>
+                        <div><strong>Валюта:</strong> ${account.currency}</div>
+                        ${account.description ? `<div><strong>Описание:</strong> ${account.description}</div>` : ''}
+                    </div>
+                    <div class="account-actions">
+                        <button class="btn" onclick="editAccount(${account.id})">✏️ Изменить</button>
+                        <button class="btn btn-danger" onclick="deleteAccount(${account.id})">🗑️ Удалить</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateTotalBalance() {
+            const total = accounts.reduce((sum, account) => sum + account.balance, 0);
+            document.getElementById('totalBalance').textContent = `${formatBalance(total, 'RUB')}`;
+        }
+
+        function formatBalance(amount, currency) {
+            const formatted = new Intl.NumberFormat('ru-RU', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+            
+            const symbols = {
+                'RUB': '₽',
+                'USD': '$',
+                'EUR': '€'
+            };
+            
+            return `${formatted} ${symbols[currency] || currency}`;
+        }
+
+        function getTypeName(type) {
+            const types = {
+                'checking': 'Расчетный',
+                'savings': 'Сберегательный',
+                'investment': 'Инвестиционный',
+                'credit': 'Кредитный'
+            };
+            return types[type] || type;
+        }
+
+        function resetForm() {
+            editingAccountId = null;
+            document.getElementById('addAccountForm').reset();
+            document.querySelector('.form-section h2').textContent = '➕ Добавить новый счет';
+            document.querySelector('.form-section button').textContent = 'Добавить счет';
+        }
+
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('messageArea');
+            messageArea.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingMessage').style.display = 'none';
+        }
+
+        // Update form submission handler based on editing state
+        document.getElementById('addAccountForm').addEventListener('submit', function(event) {
+            if (editingAccountId) {
+                updateAccount(event);
+            } else {
+                addAccount(event);
+            }
+        });
+    </script>
+</body>
+</html>
