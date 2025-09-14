@@ -1,0 +1,33 @@
+name: Detailed Deployment Diagnosis
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Detailed Diagnosis
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== DETAILED DEPLOYMENT DIAGNOSIS ==="
+          
+          echo "1. Setting environment variables..."
+          set NODE_SKIP_PLATFORM_CHECK=1
+          
+          echo "2. Navigating to application directory..."
+          cd C:\glaz-finance-app
+          
+          echo "3. Running detailed diagnosis script..."
+          powershell -ExecutionPolicy Bypass -File scripts\diagnose-deployment.ps1
+          
+          echo "=== DIAGNOSIS COMPLETE ==="
