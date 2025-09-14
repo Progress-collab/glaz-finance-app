@@ -1,0 +1,49 @@
+name: Change to Standard Ports
+
+on:
+  workflow_dispatch:
+
+jobs:
+  change-ports:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Change Application to Standard Ports
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "Changing application to standard ports..."
+          
+          echo "1. Stopping PM2 processes..."
+          pm2 stop all
+          
+          echo "2. Updating backend to port 80..."
+          cd C:\glaz-finance-app\backend
+          (Get-Content index.js) -replace 'PORT = process.env.PORT \|\| 3002', 'PORT = process.env.PORT || 80' | Set-Content index.js
+          
+          echo "3. Updating PM2 config for standard ports..."
+          cd C:\glaz-finance-app
+          (Get-Content ecosystem-js.config.js) -replace ': 3002', ': 80' | Set-Content ecosystem-js.config.js
+          (Get-Content ecosystem-js.config.js) -replace ': 3001', ': 443' | Set-Content ecosystem-js.config.js
+          
+          echo "4. Adding firewall rules for standard ports..."
+          netsh advfirewall firewall add rule name="Glaz Finance HTTP" dir=in action=allow protocol=TCP localport=80
+          netsh advfirewall firewall add rule name="Glaz Finance HTTPS" dir=in action=allow protocol=TCP localport=443
+          
+          echo "5. Starting PM2 with new configuration..."
+          pm2 start ecosystem-js.config.js
+          pm2 save
+          
+          echo "6. Checking PM2 status..."
+          pm2 list
+          
+          echo "7. Testing local connections..."
+          curl -s http://localhost:80/health || echo "Port 80 test failed"
+          
+          echo "Application now running on standard ports!"
+          echo "Frontend: http://195.133.47.134"
+          echo "Backend: http://195.133.47.134/health"
