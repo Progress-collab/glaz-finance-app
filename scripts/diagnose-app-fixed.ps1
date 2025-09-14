@@ -1,4 +1,4 @@
-# Diagnose Glaz Finance App Issues
+# Diagnose Glaz Finance App Issues (Fixed)
 # Run as Administrator
 
 Write-Host "Diagnosing Glaz Finance App issues..." -ForegroundColor Green
@@ -90,8 +90,8 @@ if ($redisService) {
     Write-Host "Redis service: NOT FOUND" -ForegroundColor Red
 }
 
-Write-Host "`n=== Recommendations ===" -ForegroundColor Cyan
-Write-Host "1. If PM2 shows no processes, try: pm2 start ecosystem-sqlite.config.js" -ForegroundColor White
-Write-Host "2. If backend dist is missing, try: npm run build" -ForegroundColor White
-Write-Host "3. If ports are free, processes are not running" -ForegroundColor White
-Write-Host "4. Check PM2 logs for specific errors" -ForegroundColor White
+Write-Host "`n=== Quick Fix Commands ===" -ForegroundColor Cyan
+Write-Host "1. pm2 stop all" -ForegroundColor White
+Write-Host "2. pm2 start ecosystem-sqlite.config.js" -ForegroundColor White
+Write-Host "3. pm2 save" -ForegroundColor White
+Write-Host "4. pm2 list" -ForegroundColor White
