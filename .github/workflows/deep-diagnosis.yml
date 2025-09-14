@@ -1,0 +1,59 @@
+name: Deep Diagnosis
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deep-diagnosis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deep Diagnosis
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== DEEP DIAGNOSIS ==="
+          
+          echo "1. PM2 processes with details:"
+          pm2 list
+          pm2 logs --lines 20
+          
+          echo "2. All listening ports:"
+          netstat -an | findstr LISTENING
+          
+          echo "3. Port 3000 specifically:"
+          netstat -ano | findstr :3000
+          
+          echo "4. Node.js processes:"
+          tasklist | findstr node
+          
+          echo "5. Check if port3000-server.js exists:"
+          if exist "C:\glaz-finance-app\port3000-server.js" (
+            echo "File exists"
+            type C:\glaz-finance-app\port3000-server.js
+          ) else (
+            echo "File NOT found"
+          )
+          
+          echo "6. Try to start server manually:"
+          cd C:\glaz-finance-app
+          node port3000-server.js &
+          
+          echo "7. Wait 3 seconds and check port:"
+          timeout 3
+          netstat -an | findstr :3000
+          
+          echo "8. Test local connection:"
+          curl -v http://localhost:3000 || echo "Local connection failed"
+          
+          echo "9. Check Windows Firewall status:"
+          netsh advfirewall show allprofiles
+          
+          echo "10. Check if Windows Defender is blocking:"
+          Get-MpComputerStatus
+          
+          echo "=== DEEP DIAGNOSIS COMPLETE ==="

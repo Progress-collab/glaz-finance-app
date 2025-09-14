@@ -1,0 +1,33 @@
+name: Test External Connectivity
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-connectivity:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test from GitHub Runner
+      run: |
+        echo "=== TESTING EXTERNAL CONNECTIVITY ==="
+        
+        echo "1. Testing port 3000 from GitHub runner:"
+        timeout 10 curl -v http://195.133.47.134:3000 || echo "Port 3000 not accessible from GitHub"
+        
+        echo "2. Testing port 22 (SSH):"
+        timeout 5 nc -zv 195.133.47.134 22 || echo "SSH not accessible"
+        
+        echo "3. Testing ping:"
+        ping -c 3 195.133.47.134 || echo "Ping failed"
+        
+        echo "4. Testing traceroute:"
+        traceroute 195.133.47.134 || echo "Traceroute failed"
+        
+        echo "5. Testing with different methods:"
+        wget --timeout=10 http://195.133.47.134:3000 || echo "Wget failed"
+        
+        echo "6. Testing port scan:"
+        nmap -p 3000,3001,3002,80,443 195.133.47.134 || echo "Nmap failed"
+        
+        echo "=== CONNECTIVITY TEST COMPLETE ==="
