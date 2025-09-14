@@ -72,8 +72,8 @@ SERVER_PASSWORD=$deployPassword
 SERVER_PORT=22
 
 # Настройки приложения
-APP_PORT=3000
-API_PORT=3001
+APP_PORT=3001
+API_PORT=3002
 DB_PORT=5432
 REDIS_PORT=6379
 
@@ -95,7 +95,7 @@ Write-Host "Следующие шаги:" -ForegroundColor Yellow
 Write-Host "1. Заполните API ключи в файле $appDir\config.env" -ForegroundColor White
 Write-Host "2. Настройте GitHub Secrets с данными сервера" -ForegroundColor White
 Write-Host "3. Запустите приложение командой: docker-compose up -d" -ForegroundColor White
-Write-Host "4. Откройте браузер по адресу: http://YOUR_SERVER_IP:3000" -ForegroundColor White
+Write-Host "4. Откройте браузер по адресу: http://YOUR_SERVER_IP:3001" -ForegroundColor White
 
 Write-Host "`nДанные для GitHub Secrets:" -ForegroundColor Cyan
 Write-Host "SERVER_HOST: YOUR_SERVER_IP" -ForegroundColor White

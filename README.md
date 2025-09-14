@@ -67,3 +67,12 @@ glaz-finance-app/
 ## Деплой
 
 Автоматический деплой на Windows Server 2012 R2 через GitHub Actions.
+
+## Порты приложения
+
+- **Frontend**: 3001 (избегает конфликта с портом 3000)
+- **Backend API**: 3002
+- **PostgreSQL**: 5432
+- **Redis**: 6379
+
+**Доступ к приложению**: `http://YOUR_SERVER_IP:3001`
