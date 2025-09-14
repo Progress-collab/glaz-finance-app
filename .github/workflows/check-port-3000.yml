@@ -1,0 +1,45 @@
+name: Check Port 3000 Application
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-3000:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check Port 3000 Status
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== CHECKING PORT 3000 APPLICATION ==="
+          
+          echo "1. Checking all PM2 processes:"
+          pm2 list
+          
+          echo "2. Checking port 3000 status:"
+          netstat -an | findstr :3000
+          
+          echo "3. Checking what's running on port 3000:"
+          netstat -ano | findstr :3000
+          
+          echo "4. Checking Node.js processes:"
+          tasklist | findstr node
+          
+          echo "5. Checking if port 3000 is listening:"
+          netstat -an | findstr LISTENING | findstr :3000
+          
+          echo "6. Testing local connection to port 3000:"
+          curl -s http://localhost:3000 || echo "Port 3000 not responding locally"
+          
+          echo "7. Checking firewall rules for port 3000:"
+          netsh advfirewall firewall show rule name="*3000*"
+          
+          echo "8. Checking recent system events:"
+          Get-WinEvent -LogName System -MaxEvents 10 | Where-Object {$_.TimeCreated -gt (Get-Date).AddHours(-3)}
+          
+          echo "=== PORT 3000 CHECK COMPLETE ==="

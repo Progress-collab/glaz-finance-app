@@ -1,0 +1,35 @@
+name: Test Common Ports
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-ports:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test Common Ports
+      run: |
+        echo "=== TESTING COMMON PORTS ==="
+        
+        echo "Testing standard web ports..."
+        
+        echo "1. Port 80 (HTTP):"
+        timeout 5 curl -s http://195.133.47.134:80 || echo "Port 80 blocked"
+        
+        echo "2. Port 443 (HTTPS):"
+        timeout 5 curl -s https://195.133.47.134:443 || echo "Port 443 blocked"
+        
+        echo "3. Port 8080 (Alternative HTTP):"
+        timeout 5 curl -s http://195.133.47.134:8080 || echo "Port 8080 blocked"
+        
+        echo "4. Port 8000 (Alternative HTTP):"
+        timeout 5 curl -s http://195.133.47.134:8000 || echo "Port 8000 blocked"
+        
+        echo "5. Port 22 (SSH):"
+        timeout 5 nc -zv 195.133.47.134 22 || echo "Port 22 blocked"
+        
+        echo "6. Port 21 (FTP):"
+        timeout 5 nc -zv 195.133.47.134 21 || echo "Port 21 blocked"
+        
+        echo "=== PORT TEST COMPLETE ==="

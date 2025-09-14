@@ -1,0 +1,73 @@
+name: Restore Port 3000 Application
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restore-3000:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Restore Port 3000 Application
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== RESTORING PORT 3000 APPLICATION ==="
+          
+          echo "1. Checking current PM2 status:"
+          pm2 list
+          
+          echo "2. Stopping all PM2 processes:"
+          pm2 stop all
+          
+          echo "3. Adding firewall rule for port 3000:"
+          netsh advfirewall firewall add rule name="Port 3000 App" dir=in action=allow protocol=TCP localport=3000
+          
+          echo "4. Checking if there's a PM2 config for port 3000:"
+          if exist "C:\glaz-finance-app\ecosystem.config.js" (
+            echo "Found ecosystem.config.js, starting with it..."
+            pm2 start ecosystem.config.js
+          ) else (
+            echo "No ecosystem.config.js found, checking for other configs..."
+            dir C:\glaz-finance-app\ecosystem*.config.js
+          )
+          
+          echo "5. If no config found, starting a simple server on port 3000:"
+          if not exist "C:\glaz-finance-app\ecosystem.config.js" (
+            echo "Creating simple server for port 3000..."
+            @"
+          const express = require('express');
+          const app = express();
+          const PORT = 3000;
+          
+          app.get('/', (req, res) => {
+            res.json({ 
+              message: 'Port 3000 Application Restored!',
+              timestamp: new Date().toISOString(),
+              port: PORT
+            });
+          });
+          
+          app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Port 3000 server running on ${PORT}`);
+          });
+          "@ > C:\glaz-finance-app\port3000-server.js
+            
+            echo "Starting port 3000 server..."
+            node C:\glaz-finance-app\port3000-server.js &
+          )
+          
+          echo "6. Checking PM2 status after restoration:"
+          pm2 list
+          
+          echo "7. Testing port 3000:"
+          curl -s http://localhost:3000 || echo "Port 3000 still not responding"
+          
+          echo "8. Checking port status:"
+          netstat -an | findstr :3000
+          
+          echo "=== PORT 3000 RESTORATION COMPLETE ==="
