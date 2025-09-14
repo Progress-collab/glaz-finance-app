@@ -1,0 +1,27 @@
+name: Simple Server Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  server-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Simple Server Test
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "Creating simple server..."
+          cd C:\glaz-finance-app
+          echo const express = require('express'); > simple-server.js
+          echo const app = express(); >> simple-server.js
+          echo const PORT = 3002; >> simple-server.js
+          echo app.get('/', (req, res) =^> res.json({message: 'Hello World!'})); >> simple-server.js
+          echo app.listen(PORT, () =^> console.log('Server running on port', PORT)); >> simple-server.js
+          echo "Starting server..."
+          node simple-server.js

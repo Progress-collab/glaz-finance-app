@@ -1,0 +1,20 @@
+name: Simple PM2 Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pm2-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Simple PM2 Test
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "Testing PM2..."
+          pm2 list
