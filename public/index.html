@@ -514,7 +514,9 @@
             editingAccountId = null;
             document.getElementById('addAccountForm').reset();
             document.querySelector('.form-section h2').textContent = '➕ Добавить новый счет';
-            document.querySelector('.form-section button').textContent = 'Добавить счет';
+            const submitButton = document.querySelector('.form-section button');
+            submitButton.textContent = 'Добавить счет';
+            submitButton.className = 'btn';
         }
 
         function showMessage(message, type) {
