@@ -1,0 +1,97 @@
+# Fix Issues Script for Windows Server 2012 R2
+# Run as Administrator
+
+Write-Host "Fixing setup issues..." -ForegroundColor Green
+
+# Check administrator privileges
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    Write-Host "This script requires administrator privileges!" -ForegroundColor Red
+    exit 1
+}
+
+# Fix 1: Create user with stronger password
+Write-Host "Creating user with stronger password..." -ForegroundColor Yellow
+$deployUser = "glaz-deploy"
+$deployPassword = "GlazDeploy2024!@#"
+
+try {
+    # Remove existing user if exists
+    Remove-LocalUser -Name $deployUser -ErrorAction SilentlyContinue
+    
+    # Create new user with stronger password
+    New-LocalUser -Name $deployUser -Password (ConvertTo-SecureString $deployPassword -AsPlainText -Force) -FullName "Glaz Finance Deploy User" -Description "User for deploying Glaz Finance App"
+    
+    # Add to administrators group (Russian name for Windows Server 2012 R2)
+    Add-LocalGroupMember -Group "Администраторы" -Member $deployUser
+    
+    Write-Host "User $deployUser created successfully" -ForegroundColor Green
+} catch {
+    Write-Host "Error creating user: $($_.Exception.Message)" -ForegroundColor Red
+}
+
+# Fix 2: Install OpenSSH Server manually
+Write-Host "Installing OpenSSH Server manually..." -ForegroundColor Yellow
+
+# Download and install OpenSSH Server
+$sshUrl = "https://github.com/PowerShell/Win32-OpenSSH/releases/download/v9.2.2.0p1-Beta/OpenSSH-Win64.zip"
+$sshZip = "$env:TEMP\OpenSSH-Win64.zip"
+$sshDir = "C:\Program Files\OpenSSH"
+
+try {
+    # Download OpenSSH
+    Write-Host "Downloading OpenSSH Server..." -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $sshUrl -OutFile $sshZip
+    
+    # Extract OpenSSH
+    Write-Host "Extracting OpenSSH Server..." -ForegroundColor Yellow
+    Expand-Archive -Path $sshZip -DestinationPath $env:TEMP -Force
+    
+    # Install OpenSSH
+    Write-Host "Installing OpenSSH Server..." -ForegroundColor Yellow
+    Set-Location "$env:TEMP\OpenSSH-Win64"
+    .\install-sshd.ps1
+    
+    # Configure SSH
+    Write-Host "Configuring SSH..." -ForegroundColor Yellow
+    Set-Service -Name sshd -StartupType 'Automatic'
+    Start-Service sshd
+    
+    # Configure firewall
+    New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH Server' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22
+    
+    Write-Host "OpenSSH Server installed successfully" -ForegroundColor Green
+} catch {
+    Write-Host "Error installing OpenSSH: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Please install OpenSSH Server manually" -ForegroundColor Yellow
+}
+
+# Fix 3: Check Docker installation
+Write-Host "Checking Docker installation..." -ForegroundColor Yellow
+if (Get-Command docker -ErrorAction SilentlyContinue) {
+    Write-Host "Docker is already installed" -ForegroundColor Green
+} else {
+    Write-Host "Docker is not installed. Please install Docker Desktop manually:" -ForegroundColor Yellow
+    Write-Host "1. Go to https://www.docker.com/products/docker-desktop/" -ForegroundColor White
+    Write-Host "2. Download Docker Desktop for Windows" -ForegroundColor White
+    Write-Host "3. Install and restart the computer" -ForegroundColor White
+}
+
+# Fix 4: Set up application directory permissions
+Write-Host "Setting up directory permissions..." -ForegroundColor Yellow
+$appDir = "C:\glaz-finance-app"
+if (Test-Path $appDir) {
+    icacls $appDir /grant "$deployUser:(OI)(CI)F" /T
+    Write-Host "Directory permissions set" -ForegroundColor Green
+}
+
+Write-Host "`nFix completed!" -ForegroundColor Green
+Write-Host "Updated GitHub Secrets data:" -ForegroundColor Cyan
+Write-Host "SERVER_USERNAME: $deployUser" -ForegroundColor White
+Write-Host "SERVER_PASSWORD: $deployPassword" -ForegroundColor White
+Write-Host "SERVER_PORT: 22" -ForegroundColor White
+
+Write-Host "`nNext steps:" -ForegroundColor Yellow
+Write-Host "1. Install Docker Desktop manually if not installed" -ForegroundColor White
+Write-Host "2. Restart the computer" -ForegroundColor White
+Write-Host "3. Clone repository: git clone https://github.com/Progress-collab/glaz-finance-app.git C:\glaz-finance-app" -ForegroundColor White
+Write-Host "4. Run: docker-compose up -d" -ForegroundColor White
