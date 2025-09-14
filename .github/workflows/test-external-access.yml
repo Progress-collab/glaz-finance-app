@@ -1,0 +1,30 @@
+name: Test External Access
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-external:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test External Access to Application
+      run: |
+        echo "=== TESTING EXTERNAL ACCESS ==="
+        
+        echo "1. Testing Backend API (port 3002):"
+        timeout 10 curl -v http://195.133.47.134:3002 || echo "Backend not accessible"
+        
+        echo "2. Testing Health endpoint:"
+        timeout 10 curl -v http://195.133.47.134:3002/health || echo "Health endpoint not accessible"
+        
+        echo "3. Testing Frontend (port 3001):"
+        timeout 10 curl -v http://195.133.47.134:3001 || echo "Frontend not accessible"
+        
+        echo "4. Testing port 3000:"
+        timeout 10 curl -v http://195.133.47.134:3000 || echo "Port 3000 not accessible"
+        
+        echo "5. Testing with wget:"
+        timeout 10 wget -q -O - http://195.133.47.134:3002 || echo "Wget failed"
+        
+        echo "=== EXTERNAL ACCESS TEST COMPLETE ==="
