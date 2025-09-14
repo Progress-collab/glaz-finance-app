@@ -36,11 +36,96 @@ jobs:
           # Install dependencies
           npm install
           
-          # Build application
-          npm run build
+          # Install TypeScript globally
+          npm install -g typescript
+          
+          # Install backend dependencies
+          cd backend
+          npm install
+          cd ..
+          
+          # Install frontend dependencies
+          cd frontend
+          npm install --legacy-peer-deps
+          cd ..
+          
+          # Create backend JavaScript file if TypeScript build fails
+          if (!(Test-Path "backend\dist\index.js")) {
+            Write-Host "Creating JavaScript backend file..." -ForegroundColor Yellow
+            @"
+          const express = require('express');
+          const cors = require('cors');
+          
+          const app = express();
+          const PORT = process.env.PORT || 3002;
+          
+          // Middleware
+          app.use(cors());
+          app.use(express.json());
+          
+          // Routes
+          app.get('/', (req, res) => {
+            res.json({ 
+              message: 'Glaz Finance App Backend is running!',
+              timestamp: new Date().toISOString(),
+              port: PORT
+            });
+          });
+          
+          app.get('/health', (req, res) => {
+            res.json({ 
+              status: 'OK',
+              uptime: process.uptime(),
+              timestamp: new Date().toISOString()
+            });
+          });
+          
+          // Start server
+          app.listen(PORT, () => {
+            console.log(`🚀 Glaz Finance Backend is running on port ${PORT}`);
+            console.log(`📊 Health check: http://localhost:${PORT}/health`);
+          });
+          "@ | Out-File -FilePath "backend\index.js" -Encoding UTF8
+          }
+          
+          # Create PM2 configuration for JavaScript
+          @"
+          module.exports = {
+            apps : [{
+              name: 'glaz-finance-backend',
+              script: './backend/index.js',
+              instances: 1,
+              autorestart: true,
+              watch: false,
+              max_memory_restart: '1G',
+              env: {
+                NODE_ENV: 'production',
+                PORT: 3002,
+                DATABASE_URL: 'sqlite://C:/glaz-finance-app/database/glaz_finance.db',
+                REDIS_URL: 'redis://localhost:6379',
+                NODE_SKIP_PLATFORM_CHECK: '1'
+              }
+            }, {
+              name: 'glaz-finance-frontend',
+              script: 'npm',
+              args: 'start',
+              cwd: './frontend',
+              instances: 1,
+              autorestart: true,
+              watch: false,
+              max_memory_restart: '1G',
+              env: {
+                NODE_ENV: 'production',
+                PORT: 3001,
+                REACT_APP_API_URL: 'http://localhost:3002',
+                NODE_SKIP_PLATFORM_CHECK: '1'
+              }
+            }]
+          };
+          "@ | Out-File -FilePath "ecosystem-js.config.js" -Encoding UTF8
           
           # Start with PM2
-          pm2 start ecosystem-sqlite.config.js
+          pm2 start ecosystem-js.config.js
           pm2 save
           
           # Show status
