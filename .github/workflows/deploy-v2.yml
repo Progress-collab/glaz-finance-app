@@ -36,23 +36,26 @@ jobs:
           echo "4. Pulling latest changes from GitHub..."
           git pull origin main
           
-          echo "5. Installing dependencies..."
-          npm install express cors --save
+          echo "5. Using simple package.json..."
+          copy package-simple.json package.json
           
-          echo "6. Starting Glaz Finance App v2.0 with PM2..."
+          echo "6. Installing dependencies..."
+          npm install --legacy-peer-deps
+          
+          echo "7. Starting Glaz Finance App v2.0 with PM2..."
           pm2 start glaz-finance-app-v2.js --name "glaz-finance-v2"
           pm2 save
           
-          echo "7. Waiting for application to start..."
+          echo "8. Waiting for application to start..."
           timeout /t 5 /nobreak >nul
           
-          echo "8. Checking PM2 status..."
+          echo "9. Checking PM2 status..."
           pm2 list
           
-          echo "9. Checking if application is running..."
+          echo "10. Checking if application is running..."
           netstat -an | findstr :3000
           
-          echo "10. Testing local connection..."
+          echo "11. Testing local connection..."
           powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:3000' -TimeoutSec 5 | Out-Null; Write-Host '✅ Application is running!' } catch { Write-Host '❌ Application failed to start' }"
           
           echo "=== DEPLOYMENT COMPLETE ==="

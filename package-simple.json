@@ -1,0 +1,17 @@
+{
+  "name": "glaz-finance-app",
+  "version": "2.0.0",
+  "description": "Glaz Finance App - Simple Version",
+  "main": "glaz-finance-app-v2.js",
+  "scripts": {
+    "start": "node glaz-finance-app-v2.js",
+    "dev": "node glaz-finance-app-v2.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "keywords": ["finance", "nodejs", "express"],
+  "author": "Evgeny Glazeykin",
+  "license": "MIT"
+}
