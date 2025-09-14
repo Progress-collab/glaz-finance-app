@@ -1,0 +1,35 @@
+name: Reliable Production Deployment
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Reliable Production Deployment
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== RELIABLE PRODUCTION DEPLOYMENT ==="
+          
+          echo "1. Setting environment variables..."
+          set NODE_SKIP_PLATFORM_CHECK=1
+          
+          echo "2. Navigating to application directory..."
+          cd C:\glaz-finance-app
+          
+          echo "3. Running production deployment script..."
+          powershell -ExecutionPolicy Bypass -File scripts\deploy-production.ps1
+          
+          echo "=== DEPLOYMENT WORKFLOW COMPLETE ==="
