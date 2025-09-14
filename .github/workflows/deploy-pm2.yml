@@ -21,37 +21,37 @@ jobs:
         password: ${{ secrets.SERVER_PASSWORD }}
         port: ${{ secrets.SERVER_PORT }}
         script: |
-          Write-Host "Setting environment variables..." -ForegroundColor Green
-          $env:NODE_SKIP_PLATFORM_CHECK = "1"
+          echo "Setting environment variables..."
+          set NODE_SKIP_PLATFORM_CHECK=1
           
-          Write-Host "Navigating to application directory..." -ForegroundColor Green
+          echo "Navigating to application directory..."
           cd C:\glaz-finance-app
           
-          Write-Host "Stopping existing PM2 processes..." -ForegroundColor Yellow
+          echo "Stopping existing PM2 processes..."
           pm2 stop all
           
-          Write-Host "Pulling latest changes..." -ForegroundColor Green
+          echo "Pulling latest changes..."
           git pull origin main
           
-          Write-Host "Installing dependencies..." -ForegroundColor Green
+          echo "Installing dependencies..."
           npm install
           
-          Write-Host "Installing TypeScript globally..." -ForegroundColor Green
+          echo "Installing TypeScript globally..."
           npm install -g typescript
           
-          Write-Host "Installing backend dependencies..." -ForegroundColor Green
+          echo "Installing backend dependencies..."
           cd backend
           npm install
           cd ..
           
-          Write-Host "Installing frontend dependencies..." -ForegroundColor Green
+          echo "Installing frontend dependencies..."
           cd frontend
           npm install --legacy-peer-deps
           cd ..
           
-          Write-Host "Checking if backend JavaScript file exists..." -ForegroundColor Green
-          if (!(Test-Path "backend\dist\index.js")) {
-            Write-Host "Creating JavaScript backend file..." -ForegroundColor Yellow
+          echo "Checking if backend JavaScript file exists..."
+          if not exist "backend\dist\index.js" (
+            echo "Creating JavaScript backend file..."
             @"
           const express = require('express');
           const cors = require('cors');
@@ -85,10 +85,10 @@ jobs:
             console.log(`🚀 Glaz Finance Backend is running on port ${PORT}`);
             console.log(`📊 Health check: http://localhost:${PORT}/health`);
           });
-          "@ | Out-File -FilePath "backend\index.js" -Encoding UTF8
-          }
+          "@ > backend\index.js
+          )
           
-          Write-Host "Creating PM2 configuration..." -ForegroundColor Green
+          echo "Creating PM2 configuration..."
           @"
           module.exports = {
             apps : [{
@@ -122,17 +122,17 @@ jobs:
               }
             }]
           };
-          "@ | Out-File -FilePath "ecosystem-js.config.js" -Encoding UTF8
+          "@ > ecosystem-js.config.js
           
-          Write-Host "Starting PM2 processes..." -ForegroundColor Green
+          echo "Starting PM2 processes..."
           pm2 start ecosystem-js.config.js
           pm2 save
           
-          Write-Host "Showing PM2 status..." -ForegroundColor Green
+          echo "Showing PM2 status..."
           pm2 list
           
-          Write-Host "Checking port status..." -ForegroundColor Green
+          echo "Checking port status..."
           netstat -an | findstr :3001
           netstat -an | findstr :3002
           
-          Write-Host "Deployment completed! Application should be available at: http://195.133.47.134:3001" -ForegroundColor Green
+          echo "Deployment completed! Application should be available at: http://195.133.47.134:3001"
