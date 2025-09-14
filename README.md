@@ -32,7 +32,7 @@
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/glazeykin/glaz-finance-app.git
+git clone https://github.com/Progress-collab/glaz-finance-app.git
 cd glaz-finance-app
 
 # Установка зависимостей

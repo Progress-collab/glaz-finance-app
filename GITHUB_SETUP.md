@@ -3,7 +3,7 @@
 ## Шаг 1: Создание репозитория на GitHub
 
 1. Перейдите на [GitHub.com](https://github.com)
-2. Войдите в аккаунт `glazeykin`
+2. Войдите в аккаунт `Progress-collab`
 3. Нажмите кнопку "New repository" (зеленая кнопка)
 4. Заполните данные:
    - **Repository name**: `glaz-finance-app`
@@ -18,7 +18,7 @@
 
 ```bash
 # Добавление удаленного репозитория
-git remote add origin https://github.com/glazeykin/glaz-finance-app.git
+git remote add origin https://github.com/Progress-collab/glaz-finance-app.git
 
 # Переименование основной ветки в main (если нужно)
 git branch -M main
