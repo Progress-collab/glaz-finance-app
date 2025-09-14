@@ -1,0 +1,60 @@
+name: Deploy Port 3000 Application
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-3000:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy Port 3000 App
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "Setting environment variables..."
+          set NODE_SKIP_PLATFORM_CHECK=1
+          
+          echo "Navigating to application directory..."
+          cd C:\glaz-finance-app
+          
+          echo "Stopping existing PM2 processes..."
+          pm2 stop all
+          
+          echo "Adding firewall rule for port 3000..."
+          netsh advfirewall firewall add rule name="Port 3000 App" dir=in action=allow protocol=TCP localport=3000
+          
+          echo "Installing Express..."
+          npm install express --save
+          
+          echo "Creating port 3000 server..."
+          echo const express = require('express'); > port3000-server.js
+          echo const app = express(); >> port3000-server.js
+          echo const PORT = 3000; >> port3000-server.js
+          echo. >> port3000-server.js
+          echo app.get('/', (req, res) =^> { >> port3000-server.js
+          echo   res.json({ message: 'Port 3000 Application!', port: PORT }); >> port3000-server.js
+          echo }); >> port3000-server.js
+          echo. >> port3000-server.js
+          echo app.listen(PORT, '0.0.0.0', () =^> { >> port3000-server.js
+          echo   console.log('Port 3000 server running on', PORT); >> port3000-server.js
+          echo }); >> port3000-server.js
+          
+          echo "Starting PM2 with port 3000 server..."
+          pm2 start port3000-server.js --name "port3000-app"
+          pm2 save
+          
+          echo "Checking PM2 status..."
+          pm2 list
+          
+          echo "Checking port status..."
+          netstat -an | findstr :3000
+          
+          echo "Deployment completed! Application should be available at: http://195.133.47.134:3000"
