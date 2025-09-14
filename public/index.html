@@ -376,6 +376,13 @@
         async function updateAccount(event) {
             event.preventDefault();
             
+            // Защита от двойного нажатия
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            if (submitButton.disabled) return;
+            
+            submitButton.disabled = true;
+            submitButton.textContent = 'Сохраняем...';
+            
             const formData = new FormData(event.target);
             const accountData = Object.fromEntries(formData.entries());
 
@@ -402,6 +409,10 @@
                 }
             } catch (error) {
                 showMessage('Ошибка: ' + error.message, 'error');
+            } finally {
+                // Восстанавливаем кнопку
+                submitButton.disabled = false;
+                submitButton.textContent = 'Сохранить изменения';
             }
         }
 
