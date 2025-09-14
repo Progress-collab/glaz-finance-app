@@ -31,6 +31,7 @@ jobs:
           
           echo "3. Stopping existing processes..."
           taskkill /F /IM node.exe 2>nul || echo "No Node.js processes to stop"
+          pm2 stop all 2>nul || echo "No PM2 processes to stop"
           
           echo "4. Pulling latest changes from GitHub..."
           git pull origin main
@@ -38,17 +39,21 @@ jobs:
           echo "5. Installing dependencies..."
           npm install express cors --save
           
-          echo "6. Starting Glaz Finance App v2.0..."
-          start /B node glaz-finance-app-v2.js
+          echo "6. Starting Glaz Finance App v2.0 with PM2..."
+          pm2 start glaz-finance-app-v2.js --name "glaz-finance-v2"
+          pm2 save
           
           echo "7. Waiting for application to start..."
-          timeout /t 3 /nobreak >nul
+          timeout /t 5 /nobreak >nul
           
-          echo "8. Checking if application is running..."
+          echo "8. Checking PM2 status..."
+          pm2 list
+          
+          echo "9. Checking if application is running..."
           netstat -an | findstr :3000
           
-          echo "9. Testing local connection..."
-          curl -s http://localhost:3000 >nul && echo "✅ Application is running!" || echo "❌ Application failed to start"
+          echo "10. Testing local connection..."
+          powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:3000' -TimeoutSec 5 | Out-Null; Write-Host '✅ Application is running!' } catch { Write-Host '❌ Application failed to start' }"
           
           echo "=== DEPLOYMENT COMPLETE ==="
           echo "Application should be available at: http://195.133.47.134:3000"
