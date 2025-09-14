@@ -1,0 +1,23 @@
+name: Test Application Accessibility
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-access:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test External Access
+      run: |
+        echo "Testing external access to application..."
+        
+        echo "1. Testing Backend API..."
+        curl -v --connect-timeout 10 http://195.133.47.134:3002/health || echo "Backend not accessible"
+        
+        echo "2. Testing Frontend..."
+        curl -v --connect-timeout 10 http://195.133.47.134:3001 || echo "Frontend not accessible"
+        
+        echo "3. Testing with different methods..."
+        wget --timeout=10 --tries=1 http://195.133.47.134:3002/health || echo "Backend wget failed"
+        wget --timeout=10 --tries=1 http://195.133.47.134:3001 || echo "Frontend wget failed"
