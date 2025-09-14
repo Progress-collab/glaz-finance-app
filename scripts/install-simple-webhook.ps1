@@ -1,5 +1,5 @@
-# Install Webhook as Windows Service - makes it run automatically on server startup
-Write-Host "=== INSTALLING WEBHOOK AS WINDOWS SERVICE ===" -ForegroundColor Green
+# Install Simple Webhook Server as Windows Service
+Write-Host "=== INSTALLING SIMPLE WEBHOOK SERVICE ===" -ForegroundColor Green
 
 $RepoPath = "C:\glaz-finance-app"
 $ServiceName = "GlazFinanceWebhook"
@@ -30,7 +30,6 @@ if ($existingService) {
         Write-Host "Service stopped" -ForegroundColor Green
     }
     
-    # Remove service using sc.exe (more reliable than Remove-Service on Windows Server 2012)
     $result = & sc.exe delete $ServiceName 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Existing service removed" -ForegroundColor Green
@@ -41,15 +40,14 @@ if ($existingService) {
     Start-Sleep -Seconds 2
 }
 
-# Create service wrapper script
-Write-Host "`n2. Creating service wrapper script..." -ForegroundColor Yellow
+# Create simple service wrapper
+Write-Host "`n2. Creating simple service wrapper..." -ForegroundColor Yellow
 
 $wrapperScript = @'
-# Webhook Service Wrapper
 param([string]$Action)
 
 $RepoPath = "C:\glaz-finance-app"
-$WebhookScript = "$RepoPath\scripts\webhook-server.ps1"
+$WebhookScript = "$RepoPath\scripts\simple-webhook-server.ps1"
 $LogFile = "$RepoPath\logs\webhook-service.log"
 
 # Create logs directory
@@ -69,22 +67,15 @@ try {
     Set-Location $RepoPath
     
     if ($Action -eq "start") {
-        Write-Log "Starting webhook server service..."
-        
-        # Set environment variables
+        Write-Log "Starting simple webhook server service..."
         $env:NODE_SKIP_PLATFORM_CHECK = "1"
-        
-        # Start webhook server
         powershell -ExecutionPolicy Bypass -File $WebhookScript -Port 9000
         
     } elseif ($Action -eq "stop") {
         Write-Log "Stopping webhook server service..."
-        
-        # Stop any running webhook processes
         Get-Process -Name "powershell" -ErrorAction SilentlyContinue | 
-            Where-Object { $_.CommandLine -like "*webhook-server.ps1*" } | 
+            Where-Object { $_.CommandLine -like "*simple-webhook-server.ps1*" } | 
             Stop-Process -Force -ErrorAction SilentlyContinue
-            
         Write-Log "Webhook server service stopped"
     }
     
@@ -147,18 +138,18 @@ try {
     Write-Host "Wait a few more seconds and try: http://localhost:9000/" -ForegroundColor Cyan
 }
 
-Write-Host "`n=== WEBHOOK SERVICE INSTALLED ===" -ForegroundColor Green
+Write-Host "`n=== SIMPLE WEBHOOK SERVICE INSTALLED ===" -ForegroundColor Green
 Write-Host "Service Name: $ServiceName" -ForegroundColor Cyan
 Write-Host "Webhook URL: http://195.133.47.134:9000/webhook" -ForegroundColor Cyan
 Write-Host "Health Check: http://195.133.47.134:9000/" -ForegroundColor Cyan
-Write-Host "Log File: $RepoPath\logs\webhook-service.log" -ForegroundColor Cyan
+Write-Host "Log File: $RepoPath\logs\webhook.log" -ForegroundColor Cyan
 
 Write-Host "`n=== SERVICE MANAGEMENT COMMANDS ===" -ForegroundColor Green
 Write-Host "Start service:   Start-Service -Name $ServiceName" -ForegroundColor White
 Write-Host "Stop service:    Stop-Service -Name $ServiceName" -ForegroundColor White
 Write-Host "Restart service: Restart-Service -Name $ServiceName" -ForegroundColor White
 Write-Host "Service status:  Get-Service -Name $ServiceName" -ForegroundColor White
-Write-Host "View logs:       Get-Content $RepoPath\logs\webhook-service.log -Tail 20" -ForegroundColor White
+Write-Host "View logs:       Get-Content $RepoPath\logs\webhook.log -Tail 20" -ForegroundColor White
 
 Write-Host "`n=== NEXT STEPS ===" -ForegroundColor Green
 Write-Host "1. Configure GitHub webhook in repository settings:" -ForegroundColor Yellow
@@ -168,4 +159,4 @@ Write-Host "   Events: Just the push event" -ForegroundColor White
 
 Write-Host "`n2. Test by making a commit and push to main branch" -ForegroundColor Yellow
 
-Write-Host "`nWebhook service is now running automatically!" -ForegroundColor Green
+Write-Host "`nSimple webhook service is now running automatically!" -ForegroundColor Green
