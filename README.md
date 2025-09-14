@@ -82,5 +82,5 @@ glaz-finance-app/
 - **GitHub Actions**: Автоматически деплоит при каждом push в main
 - **Сервер**: Windows Server 2012 R2 (195.133.47.134)
 - **Метод деплоя**: PM2 с SQLite базой данных
-- **SSH Status**: ✅ WORKING (Port 22 Listening, Password Auth Enabled, Administrator Access, GitHub Secrets Updated, Testing Deployment)
+- **SSH Status**: ✅ WORKING (Port 22 Listening, Password Auth Enabled, Administrator Access, GitHub Secrets Updated, Testing Deployment, Fixing SSH Auth)
 - **Последнее обновление**: $(date)
