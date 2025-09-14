@@ -1,0 +1,59 @@
+name: Debug Application Issues
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug-app:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Debug Application Status
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== DEBUGGING APPLICATION ==="
+          
+          echo "1. Current directory:"
+          pwd
+          
+          echo "2. PM2 processes:"
+          pm2 list
+          
+          echo "3. PM2 logs (last 20 lines):"
+          pm2 logs --lines 20
+          
+          echo "4. Check if backend file exists:"
+          if exist "C:\glaz-finance-app\backend\index.js" (
+            echo "Backend file exists"
+            type C:\glaz-finance-app\backend\index.js | findstr "express\|PORT\|listen"
+          ) else (
+            echo "Backend file NOT found"
+          )
+          
+          echo "5. Check PM2 config:"
+          if exist "C:\glaz-finance-app\ecosystem-js.config.js" (
+            echo "PM2 config exists"
+            type C:\glaz-finance-app\ecosystem-js.config.js
+          ) else (
+            echo "PM2 config NOT found"
+          )
+          
+          echo "6. Check port binding:"
+          netstat -an | findstr ":3002"
+          
+          echo "7. Check Node.js processes:"
+          tasklist | findstr node
+          
+          echo "8. Try to restart PM2:"
+          pm2 restart all
+          
+          echo "9. Check PM2 status after restart:"
+          pm2 list
+          
+          echo "10. Test local connection:"
+          curl -s http://localhost:3002/health || echo "Local connection failed"
