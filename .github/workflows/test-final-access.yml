@@ -1,0 +1,31 @@
+name: Test Final Application Access
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-access:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test External Access
+      run: |
+        echo "=== TESTING FINAL ACCESS ==="
+        
+        echo "1. Testing Backend API..."
+        timeout 10 curl -s http://195.133.47.134:3002/health || echo "Backend timeout"
+        
+        echo ""
+        echo "2. Testing Frontend..."
+        timeout 10 curl -s http://195.133.47.134:3001 || echo "Frontend timeout"
+        
+        echo ""
+        echo "3. Testing with wget..."
+        timeout 10 wget -q -O - http://195.133.47.134:3002/health || echo "Backend wget failed"
+        
+        echo ""
+        echo "4. Testing with different timeout..."
+        curl --connect-timeout 5 --max-time 10 http://195.133.47.134:3002/health || echo "Backend connection failed"
+        
+        echo ""
+        echo "=== TEST COMPLETE ==="
