@@ -1,0 +1,72 @@
+name: "Webhook Deploy (Alternative)"
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  webhook-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: "🚀 Webhook Deploy"
+      run: |
+        echo "=== WEBHOOK DEPLOYMENT WORKFLOW ==="
+        echo "This workflow is for reference only."
+        echo "The actual deployment happens via webhook server on Windows Server."
+        echo ""
+        echo "Webhook URL: http://195.133.47.134:9000/webhook"
+        echo "Health Check: http://195.133.47.134:9000/"
+        echo ""
+        echo "When you push to main branch:"
+        echo "1. GitHub sends webhook to Windows Server"
+        echo "2. Webhook server receives notification"
+        echo "3. Server automatically pulls changes"
+        echo "4. Server restarts application"
+        echo "5. Deployment complete in seconds!"
+        echo ""
+        echo "No more waiting for GitHub Actions!"
+        
+    - name: "📋 Deployment Instructions"
+      run: |
+        echo "=== DEPLOYMENT INSTRUCTIONS ==="
+        echo ""
+        echo "To set up webhook deployment:"
+        echo "1. Run on Windows Server:"
+        echo "   cd C:\glaz-finance-app"
+        echo "   powershell -ExecutionPolicy Bypass -File scripts\install-webhook-service.ps1"
+        echo ""
+        echo "2. Configure GitHub webhook:"
+        echo "   - Go to repository Settings > Webhooks"
+        echo "   - Add webhook: http://195.133.47.134:9000/webhook"
+        echo "   - Content type: application/json"
+        echo "   - Events: Just the push event"
+        echo ""
+        echo "3. Test by pushing this commit!"
+        echo ""
+        echo "=== BENEFITS ==="
+        echo "✅ Instant deployment (seconds vs minutes)"
+        echo "✅ No GitHub Actions usage"
+        echo "✅ Direct server-to-server communication"
+        echo "✅ Automatic restart on changes"
+        echo "✅ Runs as Windows service"
+        echo "✅ Detailed logging"
+        
+    - name: "🔗 Webhook Status Check"
+      run: |
+        echo "=== CHECKING WEBHOOK SERVER ==="
+        
+        # Try to check if webhook server is responding
+        if curl -s --max-time 5 http://195.133.47.134:9000/ > /dev/null; then
+          echo "✅ Webhook server is responding!"
+          echo "✅ Ready for automatic deployment"
+        else
+          echo "⚠️  Webhook server not responding"
+          echo "⚠️  Make sure webhook service is installed and running"
+          echo "⚠️  Check: http://195.133.47.134:9000/"
+        fi
+        
+        echo ""
+        echo "=== WEBHOOK DEPLOYMENT READY ==="
+        echo "Next push to main will trigger automatic deployment!"

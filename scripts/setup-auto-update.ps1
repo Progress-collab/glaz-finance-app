@@ -10,7 +10,9 @@ Write-Host "Script: $ScriptPath" -ForegroundColor Cyan
 Write-Host "Task: $TaskName" -ForegroundColor Cyan
 
 # Check if running as administrator
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+$currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
+$principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
+$isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if (-not $isAdmin) {
     Write-Host "❌ This script must be run as Administrator!" -ForegroundColor Red
