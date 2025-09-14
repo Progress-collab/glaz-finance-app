@@ -1,0 +1,53 @@
+name: Deploy to Windows Server 2012 R2 (PM2)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to Windows Server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 195.133.47.134
+        username: glaz-deploy
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: 22
+        script: |
+          # Set environment variables
+          $env:NODE_SKIP_PLATFORM_CHECK = "1"
+          
+          # Navigate to application directory
+          cd C:\glaz-finance-app
+          
+          # Stop existing PM2 processes
+          pm2 stop all
+          
+          # Pull latest changes
+          git pull origin main
+          
+          # Install dependencies
+          npm install
+          
+          # Build application
+          npm run build
+          
+          # Start with PM2
+          pm2 start ecosystem-sqlite.config.js
+          pm2 save
+          
+          # Show status
+          pm2 list
+          
+          # Show port status
+          netstat -an | findstr :3001
+          netstat -an | findstr :3002
+          
+          Write-Host "Deployment completed! Application should be available at: http://195.133.47.134:3001" -ForegroundColor Green
