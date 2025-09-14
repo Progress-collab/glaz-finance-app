@@ -1,0 +1,33 @@
+name: Debug Sync Issues
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug-sync:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Debug Sync Issues
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== DEBUGGING SYNC ISSUES ==="
+          
+          echo "1. Setting environment variables..."
+          set NODE_SKIP_PLATFORM_CHECK=1
+          
+          echo "2. Navigating to application directory..."
+          cd C:\glaz-finance-app
+          
+          echo "3. Running sync debug script..."
+          powershell -ExecutionPolicy Bypass -File scripts\debug-sync-issues.ps1
+          
+          echo "=== SYNC DEBUG COMPLETE ==="
