@@ -1,0 +1,64 @@
+name: Check and Fix Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-and-fix:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check and Fix Deployment
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== CHECKING AND FIXING DEPLOYMENT ==="
+          
+          echo "1. Setting environment variables..."
+          set NODE_SKIP_PLATFORM_CHECK=1
+          
+          echo "2. Navigating to application directory..."
+          cd C:\glaz-finance-app
+          
+          echo "3. Checking what's currently running..."
+          pm2 list
+          netstat -an | findstr :3000
+          
+          echo "4. Stopping ALL processes..."
+          pm2 stop all
+          pm2 delete all
+          taskkill /F /IM node.exe 2>nul || echo "No Node.js processes to stop"
+          
+          echo "5. Pulling latest changes..."
+          git pull origin main
+          
+          echo "6. Checking files..."
+          dir glaz-finance-app*.js
+          
+          echo "7. Using simple package.json..."
+          copy package-simple.json package.json
+          
+          echo "8. Installing dependencies..."
+          npm install --legacy-peer-deps
+          
+          echo "9. Starting v2.0 application..."
+          pm2 start glaz-finance-app-v2.js --name "glaz-finance-v2"
+          pm2 save
+          
+          echo "10. Waiting for startup..."
+          timeout /t 5 /nobreak >nul
+          
+          echo "11. Checking PM2 status..."
+          pm2 list
+          
+          echo "12. Checking port 3000..."
+          netstat -an | findstr :3000
+          
+          echo "13. Testing application..."
+          powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:3000' -TimeoutSec 5; Write-Host 'Status:' $response.StatusCode; Write-Host 'Content-Type:' $response.Headers.'Content-Type'; Write-Host 'Content preview:' $response.Content.Substring(0, [Math]::Min(100, $response.Content.Length)) } catch { Write-Host 'Error:' $_.Exception.Message }"
+          
+          echo "=== CHECK AND FIX COMPLETE ==="
