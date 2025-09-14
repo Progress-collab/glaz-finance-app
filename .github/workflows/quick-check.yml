@@ -1,0 +1,31 @@
+name: Quick Application Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  quick-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Quick Status Check
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== QUICK CHECK ==="
+          echo "PM2 Status:"
+          pm2 list
+          echo ""
+          echo "Ports:"
+          netstat -an | findstr ":3001\|:3002"
+          echo ""
+          echo "Files:"
+          dir C:\glaz-finance-app\backend\index.js
+          dir C:\glaz-finance-app\ecosystem-js.config.js
+          echo ""
+          echo "PM2 Logs (last 5 lines):"
+          pm2 logs --lines 5
