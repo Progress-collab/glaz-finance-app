@@ -1,0 +1,46 @@
+name: Final Application Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  final-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test External Access
+      run: |
+        echo "=== FINAL APPLICATION TEST ==="
+        
+        echo "1. Testing Backend API..."
+        curl -v --connect-timeout 15 http://195.133.47.134:3002/health
+        
+        echo ""
+        echo "2. Testing Frontend..."
+        curl -v --connect-timeout 15 http://195.133.47.134:3001
+        
+        echo ""
+        echo "3. Testing with different user agent..."
+        curl -v --connect-timeout 15 -H "User-Agent: Mozilla/5.0" http://195.133.47.134:3001
+        
+        echo ""
+        echo "=== TEST COMPLETE ==="
+        
+    - name: Server Status Check
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== SERVER STATUS ==="
+          echo "PM2 Processes:"
+          pm2 list
+          echo ""
+          echo "Port Status:"
+          netstat -an | findstr ":3001\|:3002"
+          echo ""
+          echo "Firewall Rules:"
+          netsh advfirewall firewall show rule name="Glaz Finance Frontend"
+          netsh advfirewall firewall show rule name="Glaz Finance Backend"
