@@ -1,0 +1,31 @@
+name: Run Batch File
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-batch:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Run Batch File
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          echo "=== RUNNING BATCH FILE ==="
+          
+          echo "1. Adding firewall rule..."
+          netsh advfirewall firewall add rule name="Port 3000 App" dir=in action=allow protocol=TCP localport=3000
+          
+          echo "2. Running batch file..."
+          C:\glaz-finance-app\scripts\start-port-3000.bat
+          
+          echo "3. Checking final status..."
+          pm2 list
+          netstat -an | findstr :3000
+          
+          echo "=== BATCH FILE COMPLETE ==="
