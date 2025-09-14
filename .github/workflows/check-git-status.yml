@@ -1,0 +1,93 @@
+name: Check Git Status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-git:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check Git Status on Server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        debug: true
+        script: |
+          echo "=== CHECKING GIT STATUS ON SERVER ==="
+          echo "Current user: $(whoami)"
+          echo "Current directory: $(pwd)"
+          echo ""
+          
+          cd C:\glaz-finance-app
+          echo "Changed to: $(pwd)"
+          echo ""
+          
+          echo "=== GIT CONFIGURATION ==="
+          echo "Git version:"
+          git --version
+          echo ""
+          echo "Git config list:"
+          git config --list
+          echo ""
+          echo "Git remote:"
+          git remote -v
+          echo ""
+          echo "Current branch:"
+          git branch
+          echo ""
+          
+          echo "=== GIT STATUS ==="
+          echo "Git status:"
+          git status
+          echo ""
+          echo "Git log (last 5 commits):"
+          git log --oneline -5
+          echo ""
+          
+          echo "=== NETWORK TEST ==="
+          echo "Testing GitHub connectivity:"
+          git ls-remote origin
+          echo ""
+          
+          echo "=== MANUAL GIT PULL ==="
+          echo "Stashing any local changes:"
+          git stash
+          echo ""
+          echo "Fetching from remote:"
+          git fetch origin
+          echo ""
+          echo "Checking what's on remote main:"
+          git log origin/main --oneline -5
+          echo ""
+          echo "Hard reset to origin/main:"
+          git reset --hard origin/main
+          echo ""
+          echo "Final status:"
+          git status
+          echo ""
+          
+          echo "=== FILE VERIFICATION ==="
+          echo "Checking if scripts directory exists:"
+          if exist "scripts" (
+            echo "scripts directory exists"
+            dir scripts
+          ) else (
+            echo "scripts directory NOT FOUND!"
+          )
+          echo ""
+          echo "Checking if run-on-server.bat exists:"
+          if exist "scripts\run-on-server.bat" (
+            echo "run-on-server.bat EXISTS!"
+          ) else (
+            echo "run-on-server.bat NOT FOUND!"
+          )
+          echo ""
+          
+          echo "=== COMPLETE ==="

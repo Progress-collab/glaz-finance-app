@@ -1,0 +1,36 @@
+КОМАНДЫ ДЛЯ ВЫПОЛНЕНИЯ НА СЕРВЕРЕ:
+
+1. Перейти в директорию:
+cd C:\glaz-finance-app
+
+2. Проверить Git статус:
+git status
+
+3. Проверить remote:
+git remote -v
+
+4. Проверить текущую ветку:
+git branch
+
+5. Принудительно обновить с GitHub:
+git fetch origin
+git reset --hard origin/main
+
+6. Проверить файлы:
+dir
+
+7. Проверить папку scripts:
+dir scripts
+
+8. Если scripts нет, создать вручную:
+mkdir scripts
+
+9. Создать простой bat файл:
+echo @echo off > scripts\test.bat
+echo echo Test file created >> scripts\test.bat
+echo pause >> scripts\test.bat
+
+10. Запустить тест:
+scripts\test.bat
+
+ВЫПОЛНИТЕ ЭТИ КОМАНДЫ НА СЕРВЕРЕ И ПОКАЖИТЕ РЕЗУЛЬТАТ!
