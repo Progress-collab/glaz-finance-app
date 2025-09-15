@@ -30,6 +30,35 @@ app.get('/api/accounts', (req, res) => {
   res.json({ accounts });
 });
 
+app.get('/api/accounts/total', async (req, res) => {
+  try {
+    const { currency = 'RUB' } = req.query;
+    const rates = await currencyService.getExchangeRates();
+    
+    let totalBalance = 0;
+    
+    accounts.forEach(account => {
+      const convertedBalance = currencyService.convertAmount(
+        account.balance,
+        account.currency,
+        currency.toUpperCase(),
+        rates
+      );
+      totalBalance += convertedBalance;
+    });
+    
+    res.json({
+      totalBalance: Math.round(totalBalance * 100) / 100,
+      currency: currency.toUpperCase(),
+      accountsCount: accounts.length,
+      lastUpdated: rates.lastUpdated
+    });
+  } catch (error) {
+    console.error('Error calculating total balance:', error);
+    res.status(500).json({ error: 'Failed to calculate total balance' });
+  }
+});
+
 app.get('/api/accounts/:id', (req, res) => {
   const account = accounts.find(acc => acc.id === parseInt(req.params.id));
   if (!account) {
@@ -134,35 +163,6 @@ app.get('/api/currencies/convert', async (req, res) => {
   } catch (error) {
     console.error('Error converting currency:', error);
     res.status(500).json({ error: 'Failed to convert currency' });
-  }
-});
-
-app.get('/api/accounts/total', async (req, res) => {
-  try {
-    const { currency = 'RUB' } = req.query;
-    const rates = await currencyService.getExchangeRates();
-    
-    let totalBalance = 0;
-    
-    accounts.forEach(account => {
-      const convertedBalance = currencyService.convertAmount(
-        account.balance,
-        account.currency,
-        currency.toUpperCase(),
-        rates
-      );
-      totalBalance += convertedBalance;
-    });
-    
-    res.json({
-      totalBalance: Math.round(totalBalance * 100) / 100,
-      currency: currency.toUpperCase(),
-      accountsCount: accounts.length,
-      lastUpdated: rates.lastUpdated
-    });
-  } catch (error) {
-    console.error('Error calculating total balance:', error);
-    res.status(500).json({ error: 'Failed to calculate total balance' });
   }
 });
 
