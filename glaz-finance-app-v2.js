@@ -3,12 +3,14 @@ const cors = require('cors');
 const path = require('path');
 const CurrencyService = require('./currency-service');
 const DataStorage = require('./data-storage');
+const AccountTypesService = require('./account-types-service');
 const app = express();
 const PORT = 3000;
 
 // Инициализация сервисов
 const currencyService = new CurrencyService();
 const dataStorage = new DataStorage();
+const accountTypesService = new AccountTypesService(dataStorage);
 
 // Загрузка данных из постоянного хранилища
 let accountsData = dataStorage.loadAccounts();
@@ -313,6 +315,133 @@ app.post('/api/storage/restore/:filename', (req, res) => {
   }
 });
 
+// Account Types API endpoints
+app.get('/api/account-types', (req, res) => {
+  try {
+    const types = accountTypesService.getAllTypes();
+    const usageStats = accountTypesService.getTypeUsageStats(accounts);
+    
+    res.json({
+      types: types,
+      usageStats: usageStats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting account types:', error);
+    res.status(500).json({ error: 'Failed to get account types' });
+  }
+});
+
+app.get('/api/account-types/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const type = accountTypesService.getTypeById(id);
+    
+    if (!type) {
+      return res.status(404).json({ error: 'Account type not found' });
+    }
+    
+    const usageStats = accountTypesService.getTypeUsageStats(accounts);
+    
+    res.json({
+      type: type,
+      usage: usageStats[id] || { count: 0, accounts: [] },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting account type:', error);
+    res.status(500).json({ error: 'Failed to get account type' });
+  }
+});
+
+app.post('/api/account-types', (req, res) => {
+  try {
+    const result = accountTypesService.addAccountType(req.body);
+    
+    if (result.success) {
+      res.status(201).json({
+        message: 'Account type created successfully',
+        type: result.type,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({
+        error: 'Failed to create account type',
+        details: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error creating account type:', error);
+    res.status(500).json({ error: 'Failed to create account type' });
+  }
+});
+
+app.put('/api/account-types/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Валидация операции
+    const validation = accountTypesService.validateTypeOperation('update', id, accounts);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
+    const result = accountTypesService.updateAccountType(id, req.body);
+    
+    if (result.success) {
+      res.json({
+        message: 'Account type updated successfully',
+        type: result.type,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({
+        error: 'Failed to update account type',
+        details: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error updating account type:', error);
+    res.status(500).json({ error: 'Failed to update account type' });
+  }
+});
+
+app.delete('/api/account-types/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Валидация операции
+    const validation = accountTypesService.validateTypeOperation('delete', id, accounts);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
+    const result = accountTypesService.deleteAccountType(id, accounts);
+    
+    if (result.success) {
+      // Обновляем данные в памяти
+      const updatedData = dataStorage.loadAccounts();
+      accounts = updatedData.accounts;
+      nextId = updatedData.nextId;
+      
+      res.json({
+        message: 'Account type deleted successfully',
+        deletedType: result.deletedType,
+        reassignedAccounts: result.reassignedAccounts,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({
+        error: 'Failed to delete account type',
+        details: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error deleting account type:', error);
+    res.status(500).json({ error: 'Failed to delete account type' });
+  }
+});
+
 app.get('/health', (req, res) => {
   try {
     const storageStats = dataStorage.getStorageStats();
@@ -321,8 +450,8 @@ app.get('/health', (req, res) => {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       port: PORT,
-      version: '2.2.0',
-      features: ['accounts', 'currencies', 'conversion', 'persistent_storage', 'backup_restore'],
+      version: '2.3.0',
+      features: ['accounts', 'currencies', 'conversion', 'persistent_storage', 'backup_restore', 'account_types'],
       storage: {
         accountsCount: storageStats.accountsCount,
         lastSaved: storageStats.lastSaved,
@@ -335,8 +464,8 @@ app.get('/health', (req, res) => {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       port: PORT,
-      version: '2.2.0',
-      features: ['accounts', 'currencies', 'conversion', 'persistent_storage', 'backup_restore'],
+      version: '2.3.0',
+      features: ['accounts', 'currencies', 'conversion', 'persistent_storage', 'backup_restore', 'account_types'],
       storage: { error: 'Unable to get storage stats' }
     });
   }
