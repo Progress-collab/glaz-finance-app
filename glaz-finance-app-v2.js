@@ -2,18 +2,20 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const CurrencyService = require('./currency-service');
+const DataStorage = require('./data-storage');
 const app = express();
 const PORT = 3000;
 
-// Инициализация сервиса валют
+// Инициализация сервисов
 const currencyService = new CurrencyService();
+const dataStorage = new DataStorage();
 
-// In-memory storage (временное решение)
-let accounts = [
-  { id: 1, name: 'Основной счет', balance: 100000, currency: 'RUB', type: 'checking', description: 'Основной расчетный счет' },
-  { id: 2, name: 'Инвестиционный счет', balance: 50000, currency: 'RUB', type: 'investment', description: 'Счет для инвестиций' }
-];
-let nextId = 3;
+// Загрузка данных из постоянного хранилища
+let accountsData = dataStorage.loadAccounts();
+let accounts = accountsData.accounts;
+let nextId = accountsData.nextId;
+
+console.log(`Application started with ${accounts.length} accounts loaded from storage`);
 
 // Middleware
 app.use(cors());
@@ -80,11 +82,22 @@ app.post('/api/accounts', (req, res) => {
     balance: parseFloat(balance),
     currency,
     type: type || 'checking',
-    description: description || ''
+    description: description || '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
 
   accounts.push(newAccount);
-  res.status(201).json({ account: newAccount });
+  
+  // Сохраняем данные в файл
+  if (dataStorage.saveAccounts(accounts)) {
+    res.status(201).json({ account: newAccount });
+  } else {
+    // Откатываем изменения если не удалось сохранить
+    accounts.pop();
+    nextId--;
+    res.status(500).json({ error: 'Failed to save account' });
+  }
 });
 
 app.put('/api/accounts/:id', (req, res) => {
@@ -96,16 +109,27 @@ app.put('/api/accounts/:id', (req, res) => {
 
   const { name, balance, currency, type, description } = req.body;
   
+  // Сохраняем старые данные для отката
+  const oldAccount = { ...accounts[accountIndex] };
+  
   accounts[accountIndex] = {
     ...accounts[accountIndex],
     name: name || accounts[accountIndex].name,
     balance: balance !== undefined ? parseFloat(balance) : accounts[accountIndex].balance,
     currency: currency || accounts[accountIndex].currency,
     type: type || accounts[accountIndex].type,
-    description: description !== undefined ? description : accounts[accountIndex].description
+    description: description !== undefined ? description : accounts[accountIndex].description,
+    updatedAt: new Date().toISOString()
   };
 
-  res.json({ account: accounts[accountIndex] });
+  // Сохраняем данные в файл
+  if (dataStorage.saveAccounts(accounts)) {
+    res.json({ account: accounts[accountIndex] });
+  } else {
+    // Откатываем изменения если не удалось сохранить
+    accounts[accountIndex] = oldAccount;
+    res.status(500).json({ error: 'Failed to save account changes' });
+  }
 });
 
 app.delete('/api/accounts/:id', (req, res) => {
@@ -116,7 +140,15 @@ app.delete('/api/accounts/:id', (req, res) => {
   }
 
   const deletedAccount = accounts.splice(accountIndex, 1)[0];
-  res.json({ message: 'Account deleted', account: deletedAccount });
+  
+  // Сохраняем данные в файл
+  if (dataStorage.saveAccounts(accounts)) {
+    res.json({ message: 'Account deleted', account: deletedAccount });
+  } else {
+    // Восстанавливаем удаленный счет если не удалось сохранить
+    accounts.splice(accountIndex, 0, deletedAccount);
+    res.status(500).json({ error: 'Failed to save account deletion' });
+  }
 });
 
 // Currency API endpoints
@@ -166,15 +198,66 @@ app.get('/api/currencies/convert', async (req, res) => {
   }
 });
 
+// Storage API endpoints
+app.get('/api/storage/stats', (req, res) => {
+  try {
+    const stats = dataStorage.getStorageStats();
+    res.json({
+      ...stats,
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting storage stats:', error);
+    res.status(500).json({ error: 'Failed to get storage stats' });
+  }
+});
+
+app.post('/api/storage/backup', (req, res) => {
+  try {
+    const backupFile = dataStorage.createBackup();
+    if (backupFile) {
+      res.json({ 
+        message: 'Backup created successfully',
+        backupFile: backupFile,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to create backup' });
+    }
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    res.status(500).json({ error: 'Failed to create backup' });
+  }
+});
+
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-    port: PORT,
-    version: '2.1.0',
-    features: ['accounts', 'currencies', 'conversion']
-  });
+  try {
+    const storageStats = dataStorage.getStorageStats();
+    res.json({ 
+      status: 'OK',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      port: PORT,
+      version: '2.1.0',
+      features: ['accounts', 'currencies', 'conversion', 'persistent_storage'],
+      storage: {
+        accountsCount: storageStats.accountsCount,
+        lastSaved: storageStats.lastSaved,
+        fileSize: storageStats.fileSize
+      }
+    });
+  } catch (error) {
+    res.json({ 
+      status: 'OK',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      port: PORT,
+      version: '2.1.0',
+      features: ['accounts', 'currencies', 'conversion', 'persistent_storage'],
+      storage: { error: 'Unable to get storage stats' }
+    });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
