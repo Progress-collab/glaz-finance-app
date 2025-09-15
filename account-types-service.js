@@ -246,9 +246,32 @@ class AccountTypesService {
 
     // Генерация ID для типа счета
     generateTypeId(name) {
-        const baseId = name.toLowerCase()
-            .replace(/[^a-z0-9]/g, '')
-            .substring(0, 20);
+        // Транслитерация кириллицы в латиницу
+        const translitMap = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+            'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+            'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+        };
+        
+        let baseId = name.toLowerCase();
+        
+        // Заменяем кириллицу на латиницу
+        for (const [cyrillic, latin] of Object.entries(translitMap)) {
+            baseId = baseId.replace(new RegExp(cyrillic, 'g'), latin);
+        }
+        
+        // Удаляем все символы кроме букв и цифр
+        baseId = baseId.replace(/[^a-z0-9]/g, '');
+        
+        // Если получился пустой ID, используем префикс
+        if (!baseId) {
+            baseId = 'type';
+        }
+        
+        // Ограничиваем длину
+        baseId = baseId.substring(0, 20);
         
         const types = this.loadAccountTypes();
         let id = baseId;
