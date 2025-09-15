@@ -231,6 +231,83 @@ app.post('/api/storage/backup', (req, res) => {
   }
 });
 
+app.get('/api/storage/backups', (req, res) => {
+  try {
+    const backups = dataStorage.getAvailableBackups();
+    res.json({
+      backups: backups,
+      count: backups.length,
+      maxBackups: 150,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting backups:', error);
+    res.status(500).json({ error: 'Failed to get backups list' });
+  }
+});
+
+app.post('/api/storage/restore', (req, res) => {
+  try {
+    const { filename } = req.body;
+    
+    if (!filename) {
+      return res.status(400).json({ error: 'Filename is required' });
+    }
+    
+    const result = dataStorage.restoreFromBackupByName(filename);
+    
+    if (result.success) {
+      // Обновляем данные в памяти после восстановления
+      const restoredData = dataStorage.loadAccounts();
+      accounts = restoredData.accounts;
+      nextId = restoredData.nextId;
+      
+      res.json({
+        message: 'Data restored successfully',
+        ...result,
+        reloadedAccounts: accounts.length
+      });
+    } else {
+      res.status(500).json({
+        error: 'Failed to restore data',
+        details: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error restoring data:', error);
+    res.status(500).json({ error: 'Failed to restore data' });
+  }
+});
+
+app.post('/api/storage/restore/:filename', (req, res) => {
+  try {
+    const { filename } = req.params;
+    
+    const result = dataStorage.restoreFromBackupByName(filename);
+    
+    if (result.success) {
+      // Обновляем данные в памяти после восстановления
+      const restoredData = dataStorage.loadAccounts();
+      accounts = restoredData.accounts;
+      nextId = restoredData.nextId;
+      
+      res.json({
+        message: 'Data restored successfully',
+        ...result,
+        reloadedAccounts: accounts.length
+      });
+    } else {
+      res.status(500).json({
+        error: 'Failed to restore data',
+        details: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error restoring data:', error);
+    res.status(500).json({ error: 'Failed to restore data' });
+  }
+});
+
 app.get('/health', (req, res) => {
   try {
     const storageStats = dataStorage.getStorageStats();
@@ -239,8 +316,8 @@ app.get('/health', (req, res) => {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       port: PORT,
-      version: '2.1.0',
-      features: ['accounts', 'currencies', 'conversion', 'persistent_storage'],
+      version: '2.2.0',
+      features: ['accounts', 'currencies', 'conversion', 'persistent_storage', 'backup_restore'],
       storage: {
         accountsCount: storageStats.accountsCount,
         lastSaved: storageStats.lastSaved,
@@ -253,8 +330,8 @@ app.get('/health', (req, res) => {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       port: PORT,
-      version: '2.1.0',
-      features: ['accounts', 'currencies', 'conversion', 'persistent_storage'],
+      version: '2.2.0',
+      features: ['accounts', 'currencies', 'conversion', 'persistent_storage', 'backup_restore'],
       storage: { error: 'Unable to get storage stats' }
     });
   }

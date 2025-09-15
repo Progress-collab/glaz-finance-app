@@ -1,0 +1,112 @@
+name: Deploy Backup & Restore v2.2
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'glaz-finance-app-v2.js'
+      - 'data-storage.js'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deploy Backup & Restore v2.2 to Windows Server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        timeout: 60s
+        command_timeout: 30s
+        debug: true
+        script: |
+          echo "=== Deploying Backup & Restore v2.2 ==="
+          echo "Timestamp: $(Get-Date)"
+          echo "Working directory: $(Get-Location)"
+          
+          # Navigate to project directory
+          cd C:\glaz-finance-app
+          echo "Changed to: $(Get-Location)"
+          
+          # Ensure data directory exists
+          echo "Ensuring data directory exists..."
+          if (-not (Test-Path "data")) {
+            New-Item -ItemType Directory -Path "data"
+            echo "Created data directory"
+          }
+          
+          # Stop existing processes
+          echo "Stopping existing processes..."
+          pm2 stop all
+          pm2 delete all
+          
+          # Pull latest changes
+          echo "Pulling latest changes from GitHub..."
+          git stash
+          git clean -fd
+          git fetch origin
+          git reset --hard origin/main
+          
+          # Install dependencies
+          echo "Installing dependencies..."
+          npm install --production --package-lock=false
+          
+          # Start application with PM2
+          echo "Starting application with PM2..."
+          pm2 start glaz-finance-app-v2.js --name "glaz-finance-backup-restore"
+          
+          # Save PM2 configuration
+          pm2 save
+          
+          # Show status
+          echo "=== Application Status ==="
+          pm2 list
+          pm2 logs --lines 10
+          
+          # Test endpoints
+          echo "=== Testing Backup & Restore System ==="
+          echo "Testing health endpoint..."
+          $healthResponse = Invoke-WebRequest -Uri "http://localhost:3000/health" -UseBasicParsing
+          echo "Health Status: $($healthResponse.StatusCode)"
+          $healthContent = $healthResponse.Content | ConvertFrom-Json
+          echo "Storage Info: $($healthContent.storage | ConvertTo-Json)"
+          
+          echo "Testing storage stats endpoint..."
+          $statsResponse = Invoke-WebRequest -Uri "http://localhost:3000/api/storage/stats" -UseBasicParsing
+          echo "Storage Stats Status: $($statsResponse.StatusCode)"
+          $statsContent = $statsResponse.Content | ConvertFrom-Json
+          echo "Backups Count: $($statsContent.backupsCount)"
+          echo "Max Backups: 150"
+          
+          echo "Testing backups list endpoint..."
+          $backupsResponse = Invoke-WebRequest -Uri "http://localhost:3000/api/storage/backups" -UseBasicParsing
+          echo "Backups List Status: $($backupsResponse.StatusCode)"
+          $backupsContent = $backupsResponse.Content | ConvertFrom-Json
+          echo "Available Backups: $($backupsContent.count)"
+          
+          echo "Testing backup creation..."
+          $backupResponse = Invoke-WebRequest -Uri "http://localhost:3000/api/storage/backup" -Method POST -UseBasicParsing
+          echo "Backup Creation Status: $($backupResponse.StatusCode)"
+          
+          echo "Testing accounts endpoint..."
+          $accountsResponse = Invoke-WebRequest -Uri "http://localhost:3000/api/accounts" -UseBasicParsing
+          echo "Accounts Status: $($accountsResponse.StatusCode)"
+          
+          # Show data directory contents
+          echo "=== Data Directory Contents ==="
+          if (Test-Path "data") {
+            $dataFiles = Get-ChildItem -Path "data" | Sort-Object LastWriteTime -Descending
+            echo "Total files in data directory: $($dataFiles.Count)"
+            $dataFiles | Select-Object Name, Length, LastWriteTime | Format-Table
+          } else {
+            echo "Data directory not found"
+          }
+          
+          echo "=== Deployment Complete ==="
+          echo "Backup & Restore v2.2 deployed successfully!"
+          echo "External URL: http://195.133.47.134:3000"
+          echo "Now supports 150 backup versions and restore functionality!"

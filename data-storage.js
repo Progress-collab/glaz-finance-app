@@ -90,8 +90,8 @@ class DataStorage {
                 const backupFile = path.join(this.dataDir, `accounts_backup_${Date.now()}.json`);
                 fs.copyFileSync(this.accountsFile, backupFile);
                 
-                // Удаляем старые резервные копии (оставляем только последние 5)
-                this.cleanupBackups();
+            // Удаляем старые резервные копии (оставляем только последние 150)
+            this.cleanupBackups();
             }
 
             fs.writeFileSync(this.accountsFile, JSON.stringify(accountsData, null, 2), 'utf8');
@@ -125,16 +125,50 @@ class DataStorage {
                 }))
                 .sort((a, b) => b.time - a.time);
 
-            // Удаляем все кроме последних 5 резервных копий
-            if (backupFiles.length > 5) {
-                const filesToDelete = backupFiles.slice(5);
+            // Удаляем все кроме последних 150 резервных копий
+            const maxBackups = 150;
+            if (backupFiles.length > maxBackups) {
+                const filesToDelete = backupFiles.slice(maxBackups);
                 filesToDelete.forEach(file => {
                     fs.unlinkSync(file.path);
                     console.log(`Deleted old backup: ${file.name}`);
                 });
+                console.log(`Cleaned up ${filesToDelete.length} old backup files. Kept ${maxBackups} most recent.`);
             }
         } catch (error) {
             console.error('Error cleaning up backups:', error);
+        }
+    }
+
+    // Получение списка доступных резервных копий
+    getAvailableBackups() {
+        try {
+            if (!fs.existsSync(this.dataDir)) {
+                return [];
+            }
+
+            const files = fs.readdirSync(this.dataDir);
+            const backupFiles = files
+                .filter(file => file.startsWith('accounts_backup_') && file.endsWith('.json'))
+                .map(file => {
+                    const filePath = path.join(this.dataDir, file);
+                    const stats = fs.statSync(filePath);
+                    const timestamp = file.replace('accounts_backup_', '').replace('.json', '');
+                    
+                    return {
+                        filename: file,
+                        filepath: filePath,
+                        timestamp: parseInt(timestamp),
+                        date: new Date(parseInt(timestamp)).toISOString(),
+                        size: stats.size
+                    };
+                })
+                .sort((a, b) => b.timestamp - a.timestamp);
+
+            return backupFiles;
+        } catch (error) {
+            console.error('Error getting available backups:', error);
+            return [];
         }
     }
 
@@ -146,20 +180,24 @@ class DataStorage {
                     accountsCount: 0,
                     fileSize: 0,
                     lastSaved: null,
-                    version: null
+                    version: null,
+                    backupsCount: 0
                 };
             }
 
             const stats = fs.statSync(this.accountsFile);
             const data = fs.readFileSync(this.accountsFile, 'utf8');
             const accountsData = JSON.parse(data);
+            const backups = this.getAvailableBackups();
 
             return {
                 accountsCount: accountsData.accounts ? accountsData.accounts.length : 0,
                 fileSize: stats.size,
                 lastSaved: accountsData.lastSaved,
                 version: accountsData.version,
-                nextId: accountsData.nextId
+                nextId: accountsData.nextId,
+                backupsCount: backups.length,
+                availableBackups: backups.slice(0, 10) // Показываем последние 10 для удобства
             };
         } catch (error) {
             console.error('Error getting storage stats:', error);
@@ -168,6 +206,7 @@ class DataStorage {
                 fileSize: 0,
                 lastSaved: null,
                 version: null,
+                backupsCount: 0,
                 error: error.message
             };
         }
@@ -203,16 +242,49 @@ class DataStorage {
             // Создаем резервную копию текущих данных
             const currentBackup = this.createBackup();
             
+            // Читаем и валидируем резервную копию
+            const backupData = fs.readFileSync(backupFile, 'utf8');
+            const parsedBackup = JSON.parse(backupData);
+            
+            // Проверяем структуру данных
+            if (!parsedBackup.accounts || !Array.isArray(parsedBackup.accounts)) {
+                throw new Error('Invalid backup file format');
+            }
+            
             // Восстанавливаем из указанной резервной копии
             fs.copyFileSync(backupFile, this.accountsFile);
             
             console.log(`Restored from backup: ${backupFile}`);
             console.log(`Current data backed up to: ${currentBackup}`);
+            console.log(`Restored ${parsedBackup.accounts.length} accounts`);
             
-            return true;
+            return {
+                success: true,
+                restoredAccounts: parsedBackup.accounts.length,
+                backupFile: backupFile,
+                currentBackup: currentBackup,
+                restoredAt: new Date().toISOString()
+            };
         } catch (error) {
             console.error('Error restoring from backup:', error);
-            return false;
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // Восстановление из резервной копии по имени файла
+    restoreFromBackupByName(filename) {
+        try {
+            const backupFile = path.join(this.dataDir, filename);
+            return this.restoreFromBackup(backupFile);
+        } catch (error) {
+            console.error('Error restoring from backup by name:', error);
+            return {
+                success: false,
+                error: error.message
+            };
         }
     }
 }
