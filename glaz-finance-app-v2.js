@@ -187,7 +187,7 @@ app.get('/api/currencies/convert', async (req, res) => {
     // Вычисляем курс конвертации между валютами
     const fromRate = rates[from.toUpperCase()]?.rate || 1;
     const toRate = rates[to.toUpperCase()]?.rate || 1;
-    const conversionRate = toRate / fromRate;
+    const conversionRate = fromRate / toRate;
     
     res.json({
       originalAmount: parseFloat(amount),
