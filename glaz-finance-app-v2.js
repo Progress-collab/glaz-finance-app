@@ -184,12 +184,17 @@ app.get('/api/currencies/convert', async (req, res) => {
       rates
     );
     
+    // Вычисляем курс конвертации между валютами
+    const fromRate = rates[from.toUpperCase()]?.rate || 1;
+    const toRate = rates[to.toUpperCase()]?.rate || 1;
+    const conversionRate = toRate / fromRate;
+    
     res.json({
       originalAmount: parseFloat(amount),
       originalCurrency: from.toUpperCase(),
       convertedAmount,
       targetCurrency: to.toUpperCase(),
-      rate: rates[to.toUpperCase()]?.rate || 1,
+      rate: conversionRate,
       lastUpdated: rates.lastUpdated
     });
   } catch (error) {
