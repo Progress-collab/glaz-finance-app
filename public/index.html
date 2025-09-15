@@ -216,13 +216,98 @@
             font-size: 2.5em;
             font-weight: 700;
         }
+
+        .currency-selector {
+            margin-top: 15px;
+        }
+
+        .currency-selector label {
+            font-size: 0.9em;
+            margin-right: 10px;
+        }
+
+        .currency-selector select {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .currency-converter {
+            background: linear-gradient(135deg, #339af0 0%, #228be6 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .currency-converter h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        .converter-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .converter-row input,
+        .converter-row select {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: none;
+            font-size: 0.9em;
+        }
+
+        .converter-row input {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .converter-row select {
+            min-width: 100px;
+        }
+
+        .converter-arrow {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .convert-result {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-weight: 600;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .exchange-rates {
+            margin-top: 15px;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .exchange-rates .rate-item {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>💰 Glaz Finance App - Webhook Test 🚀</h1>
-            <p>Управление личными финансами</p>
+            <h1>💰 Glaz Finance App v2.1 💱</h1>
+            <p>Управление личными финансами с поддержкой валют</p>
         </div>
 
         <div class="content">
@@ -230,6 +315,38 @@
             <div class="total-balance">
                 <h3>Общий баланс</h3>
                 <div class="amount" id="totalBalance">0 ₽</div>
+                <div class="currency-selector">
+                    <label for="totalCurrency">Валюта:</label>
+                    <select id="totalCurrency" onchange="updateTotalBalance()">
+                        <option value="RUB">₽ RUB</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Currency Converter -->
+            <div class="currency-converter">
+                <h3>💱 Конвертер валют</h3>
+                <div class="converter-form">
+                    <div class="converter-row">
+                        <input type="number" id="convertAmount" placeholder="Сумма" step="0.01">
+                        <select id="convertFrom">
+                            <option value="RUB">₽ RUB</option>
+                            <option value="USD">$ USD</option>
+                            <option value="EUR">€ EUR</option>
+                        </select>
+                        <span class="converter-arrow">→</span>
+                        <select id="convertTo">
+                            <option value="USD">$ USD</option>
+                            <option value="EUR">€ EUR</option>
+                            <option value="RUB">₽ RUB</option>
+                        </select>
+                        <button type="button" onclick="convertCurrency()" class="btn">Конвертировать</button>
+                    </div>
+                    <div id="convertResult" class="convert-result"></div>
+                </div>
+                <div id="exchangeRates" class="exchange-rates"></div>
             </div>
 
             <!-- Add Account Form -->
@@ -290,7 +407,7 @@
         let editingAccountId = null;
 
         // Load accounts on page load
-        document.addEventListener('DOMContentLoaded', loadAccounts);
+        // Removed duplicate DOMContentLoaded handler - moved to bottom
 
         // Form submission handler will be set later
 
@@ -542,6 +659,108 @@
             } else {
                 addAccount(event);
             }
+        });
+
+        // Currency functions
+        let currentExchangeRates = null;
+
+        async function loadExchangeRates() {
+            try {
+                const response = await fetch('/api/currencies');
+                const data = await response.json();
+                currentExchangeRates = data.rates;
+                displayExchangeRates(data.rates);
+                updateTotalBalance();
+            } catch (error) {
+                console.error('Error loading exchange rates:', error);
+            }
+        }
+
+        async function updateTotalBalance() {
+            try {
+                const currency = document.getElementById('totalCurrency').value;
+                const response = await fetch(`/api/accounts/total?currency=${currency}`);
+                const data = await response.json();
+                
+                const symbol = getCurrencySymbol(currency);
+                document.getElementById('totalBalance').textContent = 
+                    `${data.totalBalance.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${symbol}`;
+            } catch (error) {
+                console.error('Error updating total balance:', error);
+            }
+        }
+
+        async function convertCurrency() {
+            const amount = parseFloat(document.getElementById('convertAmount').value);
+            const from = document.getElementById('convertFrom').value;
+            const to = document.getElementById('convertTo').value;
+
+            if (!amount || amount <= 0) {
+                document.getElementById('convertResult').textContent = 'Введите корректную сумму';
+                return;
+            }
+
+            if (from === to) {
+                document.getElementById('convertResult').textContent = 'Выберите разные валюты';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/currencies/convert?amount=${amount}&from=${from}&to=${to}`);
+                const data = await response.json();
+                
+                const fromSymbol = getCurrencySymbol(data.originalCurrency);
+                const toSymbol = getCurrencySymbol(data.targetCurrency);
+                
+                document.getElementById('convertResult').innerHTML = `
+                    <strong>${amount.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ${fromSymbol}</strong> 
+                    = 
+                    <strong>${data.convertedAmount.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ${toSymbol}</strong>
+                    <br><small>Курс: 1 ${from} = ${data.rate.toFixed(4)} ${to}</small>
+                `;
+            } catch (error) {
+                console.error('Error converting currency:', error);
+                document.getElementById('convertResult').textContent = 'Ошибка конвертации';
+            }
+        }
+
+        function displayExchangeRates(rates) {
+            const container = document.getElementById('exchangeRates');
+            if (!rates || rates.isDefault) {
+                container.innerHTML = '<small>Используются базовые курсы (API недоступен)</small>';
+                return;
+            }
+
+            const ratesHtml = Object.entries(rates)
+                .filter(([key]) => key !== 'RUB' && key !== 'lastUpdated' && key !== 'isDefault')
+                .map(([currency, data]) => 
+                    `<span class="rate-item">1 ${currency} = ${data.rate.toFixed(2)} ₽</span>`
+                ).join('');
+
+            container.innerHTML = `
+                <div><strong>Курсы валют:</strong> ${ratesHtml}</div>
+                <div><small>Обновлено: ${new Date(rates.lastUpdated).toLocaleString('ru-RU')}</small></div>
+            `;
+        }
+
+        function getCurrencySymbol(currency) {
+            const symbols = {
+                'RUB': '₽',
+                'USD': '$',
+                'EUR': '€'
+            };
+            return symbols[currency] || currency;
+        }
+
+        function formatBalance(balance, currency) {
+            const symbol = getCurrencySymbol(currency);
+            return `${balance.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${symbol}`;
+        }
+
+        // Load exchange rates on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAccounts();
+            loadExchangeRates();
         });
     </script>
 </body>

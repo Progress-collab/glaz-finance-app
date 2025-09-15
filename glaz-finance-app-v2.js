@@ -1,8 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const CurrencyService = require('./currency-service');
 const app = express();
 const PORT = 3000;
+
+// Инициализация сервиса валют
+const currencyService = new CurrencyService();
 
 // In-memory storage (временное решение)
 let accounts = [
@@ -86,12 +90,90 @@ app.delete('/api/accounts/:id', (req, res) => {
   res.json({ message: 'Account deleted', account: deletedAccount });
 });
 
+// Currency API endpoints
+app.get('/api/currencies', async (req, res) => {
+  try {
+    const rates = await currencyService.getExchangeRates();
+    const availableCurrencies = currencyService.getAvailableCurrencies(rates);
+    
+    res.json({
+      rates,
+      availableCurrencies,
+      lastUpdated: rates.lastUpdated
+    });
+  } catch (error) {
+    console.error('Error fetching currencies:', error);
+    res.status(500).json({ error: 'Failed to fetch exchange rates' });
+  }
+});
+
+app.get('/api/currencies/convert', async (req, res) => {
+  try {
+    const { amount, from, to } = req.query;
+    
+    if (!amount || !from || !to) {
+      return res.status(400).json({ error: 'Amount, from, and to parameters are required' });
+    }
+    
+    const rates = await currencyService.getExchangeRates();
+    const convertedAmount = currencyService.convertAmount(
+      parseFloat(amount), 
+      from.toUpperCase(), 
+      to.toUpperCase(), 
+      rates
+    );
+    
+    res.json({
+      originalAmount: parseFloat(amount),
+      originalCurrency: from.toUpperCase(),
+      convertedAmount,
+      targetCurrency: to.toUpperCase(),
+      rate: rates[to.toUpperCase()]?.rate || 1,
+      lastUpdated: rates.lastUpdated
+    });
+  } catch (error) {
+    console.error('Error converting currency:', error);
+    res.status(500).json({ error: 'Failed to convert currency' });
+  }
+});
+
+app.get('/api/accounts/total', async (req, res) => {
+  try {
+    const { currency = 'RUB' } = req.query;
+    const rates = await currencyService.getExchangeRates();
+    
+    let totalBalance = 0;
+    
+    accounts.forEach(account => {
+      const convertedBalance = currencyService.convertAmount(
+        account.balance,
+        account.currency,
+        currency.toUpperCase(),
+        rates
+      );
+      totalBalance += convertedBalance;
+    });
+    
+    res.json({
+      totalBalance: Math.round(totalBalance * 100) / 100,
+      currency: currency.toUpperCase(),
+      accountsCount: accounts.length,
+      lastUpdated: rates.lastUpdated
+    });
+  } catch (error) {
+    console.error('Error calculating total balance:', error);
+    res.status(500).json({ error: 'Failed to calculate total balance' });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    port: PORT
+    port: PORT,
+    version: '2.1.0',
+    features: ['accounts', 'currencies', 'conversion']
   });
 });
 
