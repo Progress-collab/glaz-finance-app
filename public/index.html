@@ -292,8 +292,7 @@
         // Load accounts on page load
         document.addEventListener('DOMContentLoaded', loadAccounts);
 
-        // Add account form submission
-        document.getElementById('addAccountForm').addEventListener('submit', addAccount);
+        // Form submission handler will be set later
 
         async function loadAccounts() {
             try {
@@ -352,12 +351,8 @@
         }
 
         async function editAccount(id) {
-            console.log('editAccount called with ID:', id);
             const account = accounts.find(acc => acc.id === id);
-            if (!account) {
-                console.log('Account not found for ID:', id);
-                return;
-            }
+            if (!account) return;
 
             // Fill form with account data
             document.getElementById('accountName').value = account.name;
@@ -367,7 +362,6 @@
             document.getElementById('accountDescription').value = account.description || '';
 
             editingAccountId = id;
-            console.log('Set editingAccountId to:', editingAccountId);
             
             // Change form title and button
             document.querySelector('.form-section h2').textContent = '✏️ Редактировать счет';
@@ -380,10 +374,8 @@
 
         async function updateAccount(event) {
             event.preventDefault();
-            console.log('updateAccount called with editingAccountId:', editingAccountId);
             
             if (!editingAccountId) {
-                console.error('No editingAccountId set!');
                 showMessage('Ошибка: ID счета для редактирования не найден', 'error');
                 return;
             }
@@ -397,7 +389,6 @@
             
             const formData = new FormData(event.target);
             const accountData = Object.fromEntries(formData.entries());
-            console.log('Sending PUT request to /api/accounts/' + editingAccountId, accountData);
 
             try {
                 const response = await fetch(`/api/accounts/${editingAccountId}`, {
@@ -410,7 +401,6 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Update response:', data);
                     const index = accounts.findIndex(acc => acc.id === editingAccountId);
                     accounts[index] = data.account;
                     renderAccounts();
@@ -547,12 +537,9 @@
 
         // Update form submission handler based on editing state
         document.getElementById('addAccountForm').addEventListener('submit', function(event) {
-            console.log('Form submitted. editingAccountId:', editingAccountId);
             if (editingAccountId) {
-                console.log('Calling updateAccount for ID:', editingAccountId);
                 updateAccount(event);
             } else {
-                console.log('Calling addAccount');
                 addAccount(event);
             }
         });
